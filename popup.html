@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grammar Sensei</title>
+  <style>
+    /* ── Reset & Base ─────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 320px;
+      min-height: 200px;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      line-height: 1.55;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ───────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .header-icon {
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .header-text h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #cba6f7;
+      line-height: 1.2;
+    }
+
+    .header-text p {
+      font-size: 11px;
+      color: #6c7086;
+      margin-top: 2px;
+    }
+
+    /* ── Content ──────────────────────────── */
+    .content {
+      padding: 16px 20px 20px;
+    }
+
+    .instruction {
+      background: rgba(203, 166, 247, 0.08);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+
+    .instruction h2 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #a6adc8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .step:last-child {
+      margin-bottom: 0;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .step-text {
+      font-size: 12.5px;
+      color: #bac2de;
+      padding-top: 1px;
+    }
+
+    /* ── Stats Row ────────────────────────── */
+    .stats {
+      display: flex;
+      gap: 8px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #cba6f7;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: #6c7086;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-top: 2px;
+    }
+
+    /* ── Footer ───────────────────────────── */
+    .footer {
+      padding: 10px 20px 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      text-align: center;
+      font-size: 10.5px;
+      color: #585b70;
+    }
+
+    .footer a {
+      color: #89b4fa;
+      text-decoration: none;
+    }
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="header-icon">🎌</span>
+    <div class="header-text">
+      <h1>Grammar Sensei</h1>
+      <p>Japanese Grammar Detector</p>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="instruction">
+      <h2>How to use</h2>
+      <div class="step">
+        <span class="step-num">1</span>
+        <span class="step-text">Highlight Japanese text on any webpage</span>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <span class="step-text">Click the floating <strong>文</strong> button</span>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <span class="step-text">Read the grammar explanation!</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="pattern-count">20</div>
+        <div class="stat-label">Patterns</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">N5–N1</div>
+        <div class="stat-label">JLPT Range</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Grammar Sensei v1.0 — Built for learners
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
