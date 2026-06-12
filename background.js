@@ -18,6 +18,7 @@ importScripts(
 const EXTENSION_MENU_ID = "grammar-sensei-analyze-selection";
 const HISTORY_LIMIT = 80;
 const NOTEBOOK_LIMIT = 300;
+const STORAGE_SCHEMA_VERSION = 3;
 const SIDE_PANEL_STATE_KEY = "sidePanelState";
 
 const DEFAULT_SETTINGS = {
@@ -32,6 +33,7 @@ const DEFAULT_SETTINGS = {
   scanLimit: 50,
   confidenceThreshold: 70,
   semanticMode: true,
+  debugMatches: false,
   aiMode: "off",
   uiLanguage: "vi",
   disabledDomains: []
@@ -40,6 +42,8 @@ const DEFAULT_SETTINGS = {
 const Analyzer = GrammarSenseiCore.Analyzer;
 const AIProvider = GrammarSenseiCore.AIProvider;
 const SRS = GrammarSenseiCore.SRS;
+
+let migrationPromise = null;
 
 function nowIso() {
   return new Date().toISOString();
@@ -89,6 +93,42 @@ async function updateSettings(partial) {
   return next;
 }
 
+async function ensureStorageMigration() {
+  if (migrationPromise) return migrationPromise;
+
+  migrationPromise = (async () => {
+    const local = await chromeGet(chrome.storage.local, {
+      storageSchemaVersion: 0,
+      history: [],
+      notebook: []
+    });
+
+    if (Number(local.storageSchemaVersion || 0) >= STORAGE_SCHEMA_VERSION) {
+      return { migrated: false, storageSchemaVersion: STORAGE_SCHEMA_VERSION };
+    }
+
+    const history = Array.isArray(local.history) ? local.history.slice(0, HISTORY_LIMIT) : [];
+    const notebook = Array.isArray(local.notebook)
+      ? local.notebook.map((item) => SRS.normalizeNotebookItem(item)).slice(0, NOTEBOOK_LIMIT)
+      : [];
+
+    await chromeSet(chrome.storage.local, {
+      storageSchemaVersion: STORAGE_SCHEMA_VERSION,
+      history,
+      notebook
+    });
+
+    return {
+      migrated: true,
+      storageSchemaVersion: STORAGE_SCHEMA_VERSION,
+      historyCount: history.length,
+      notebookCount: notebook.length
+    };
+  })();
+
+  return migrationPromise;
+}
+
 function getHost(url) {
   try {
     return new URL(url || "").hostname;
@@ -107,7 +147,8 @@ function analysisOptions(settings, source) {
   return {
     source,
     confidenceThreshold: settings.confidenceThreshold,
-    semanticMode: settings.semanticMode
+    semanticMode: settings.semanticMode,
+    debugMatches: settings.debugMatches
   };
 }
 
@@ -160,6 +201,13 @@ async function saveHistoryEntry(text, analysis, source) {
 
 async function clearHistory() {
   return setHistory([]);
+}
+
+async function deleteHistoryItem(id) {
+  const history = await getHistory();
+  const next = history.filter((item) => item.id !== id);
+  await setHistory(next);
+  return { deleted: history.length !== next.length, total: next.length };
 }
 
 async function getNotebook() {
@@ -221,6 +269,57 @@ async function getNotebookStats() {
   return SRS.getNotebookStats(await getNotebook());
 }
 
+async function clearNotebook() {
+  await chromeSet(chrome.storage.local, { notebook: [] });
+  return [];
+}
+
+async function exportUserData() {
+  return {
+    app: "Grammar Sensei",
+    storageSchemaVersion: STORAGE_SCHEMA_VERSION,
+    grammarDbVersion: GrammarSenseiData.DB_VERSION,
+    exportedAt: nowIso(),
+    settings: await getSettings(),
+    history: await getHistory(),
+    notebook: await getNotebook()
+  };
+}
+
+async function importUserData(payload) {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("Invalid import payload.");
+  }
+
+  const importedSettings = payload.settings && typeof payload.settings === "object"
+    ? normalizeSettings(payload.settings)
+    : await getSettings();
+  const history = Array.isArray(payload.history) ? payload.history.slice(0, HISTORY_LIMIT) : [];
+  const notebook = Array.isArray(payload.notebook)
+    ? payload.notebook.map((item) => SRS.normalizeNotebookItem(item)).slice(0, NOTEBOOK_LIMIT)
+    : [];
+
+  await chromeSet(chrome.storage.sync, importedSettings);
+  await chromeSet(chrome.storage.local, {
+    storageSchemaVersion: STORAGE_SCHEMA_VERSION,
+    history,
+    notebook
+  });
+  Analyzer.clearCache();
+
+  return {
+    settings: importedSettings,
+    historyCount: history.length,
+    notebookCount: notebook.length
+  };
+}
+
+async function resetSettings() {
+  await chromeSet(chrome.storage.sync, DEFAULT_SETTINGS);
+  Analyzer.clearCache();
+  return DEFAULT_SETTINGS;
+}
+
 async function setSidePanelState(data) {
   const state = {
     analysis: data.analysis || null,
@@ -262,6 +361,7 @@ function setupContextMenu() {
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
+  await ensureStorageMigration();
   const settings = await getSettings();
   await chromeSet(chrome.storage.sync, settings);
   setupContextMenu();
@@ -270,7 +370,10 @@ chrome.runtime.onInstalled.addListener(async () => {
   }
 });
 
-chrome.runtime.onStartup.addListener(setupContextMenu);
+chrome.runtime.onStartup.addListener(() => {
+  ensureStorageMigration().catch((error) => console.warn("Grammar Sensei migration:", error.message));
+  setupContextMenu();
+});
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== EXTENSION_MENU_ID || !info.selectionText || !tab?.id) return;
@@ -295,6 +398,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 });
 
 async function handleMessage(request, sender) {
+  await ensureStorageMigration();
   const type = request?.type;
 
   switch (type) {
@@ -350,6 +454,9 @@ async function handleMessage(request, sender) {
     case "CLEAR_HISTORY":
       return clearHistory();
 
+    case "DELETE_HISTORY_ITEM":
+      return deleteHistoryItem(request.id);
+
     case "GET_GRAMMAR_SUMMARY":
       return Analyzer.getSummary();
 
@@ -362,6 +469,9 @@ async function handleMessage(request, sender) {
     case "GET_NOTEBOOK_STATS":
       return getNotebookStats();
 
+    case "CLEAR_NOTEBOOK":
+      return clearNotebook();
+
     case "REVIEW_NOTEBOOK_ITEM":
       return reviewNotebookItem(request.id, request.rating);
 
@@ -370,6 +480,15 @@ async function handleMessage(request, sender) {
 
     case "DELETE_NOTEBOOK_ITEM":
       return deleteNotebookItem(request.id);
+
+    case "EXPORT_USER_DATA":
+      return exportUserData();
+
+    case "IMPORT_USER_DATA":
+      return importUserData(request.data || request.payload);
+
+    case "RESET_SETTINGS":
+      return resetSettings();
 
     case "SET_SIDE_PANEL_STATE":
       return setSidePanelState(request.data || request);

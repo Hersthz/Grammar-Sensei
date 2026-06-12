@@ -20,6 +20,7 @@
     scanLimit: 50,
     confidenceThreshold: 70,
     semanticMode: true,
+    debugMatches: false,
     aiMode: "off",
     uiLanguage: "vi",
     disabledDomains: []

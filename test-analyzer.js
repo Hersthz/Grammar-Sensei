@@ -74,4 +74,26 @@ const fallback = Analyzer.analyzeText("猫", {
 });
 assert.strictEqual(fallback.primary, null);
 
-console.log(`Analyzer tests passed (${cases.length + 2} checks).`);
+const politeSentence = Analyzer.analyzeText("\u79c1\u306f\u5b66\u751f\u3067\u3059\u3002", {
+  source: "test",
+  confidenceThreshold: 70,
+  semanticMode: true
+});
+assert.strictEqual(politeSentence.primary, null, "Long sentence ending in desu should not surface a low-confidence broad pattern");
+
+const focusedDesu = Analyzer.analyzeText("\u3067\u3059", {
+  source: "test",
+  confidenceThreshold: 70,
+  semanticMode: true
+});
+assert(focusedDesu.primary, "Focused selection of desu should be detected");
+assert.strictEqual(focusedDesu.primary.id, "desu");
+
+const connectorOnly = Analyzer.analyzeText("\u305d\u308c\u304b\u3089\u884c\u304d\u307e\u3059\u3002", {
+  source: "test",
+  confidenceThreshold: 70,
+  semanticMode: true
+});
+assert.strictEqual(connectorOnly.primary, null, "Broad connector/polite endings should stay hidden below threshold");
+
+console.log(`Analyzer tests passed (${cases.length + 5} checks).`);

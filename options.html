@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grammar Sensei Options</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main class="options-shell">
+    <header class="hero">
+      <div class="brand">
+        <span class="brand-mark">文</span>
+        <div>
+          <h1>Grammar Sensei Options</h1>
+          <p>Local-first settings, privacy, and data management.</p>
+        </div>
+      </div>
+      <div class="status" id="status" aria-live="polite"></div>
+    </header>
+
+    <section class="stats-grid">
+      <div class="stat"><strong id="pattern-count">-</strong><span>Patterns</span></div>
+      <div class="stat"><strong id="notebook-total">0</strong><span>Saved</span></div>
+      <div class="stat"><strong id="notebook-due">0</strong><span>Due</span></div>
+      <div class="stat"><strong id="history-count">0</strong><span>History</span></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Core Settings</h2>
+        <button class="primary-btn" id="save-settings" type="button">Save Settings</button>
+      </div>
+      <div class="settings-grid">
+        <label><span>Enabled</span><input type="checkbox" data-setting="enabled" /></label>
+        <label><span>Floating button</span><input type="checkbox" data-setting="floatingButton" /></label>
+        <label><span>Auto analyze</span><input type="checkbox" data-setting="autoAnalyze" /></label>
+        <label><span>Save history</span><input type="checkbox" data-setting="saveHistory" /></label>
+        <label><span>Compact cards</span><input type="checkbox" data-setting="compactMode" /></label>
+        <label><span>Show match list</span><input type="checkbox" data-setting="showMatchList" /></label>
+        <label><span>Hover mode</span><input type="checkbox" data-setting="hoverEnabled" /></label>
+        <label><span>Semantic mode</span><input type="checkbox" data-setting="semanticMode" /></label>
+        <label><span>Debug matches</span><input type="checkbox" data-setting="debugMatches" /></label>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          <span>Confidence threshold</span>
+          <input type="number" min="0" max="99" step="1" data-number-setting="confidenceThreshold" />
+        </label>
+        <label>
+          <span>Hover delay ms</span>
+          <input type="number" min="150" max="1500" step="50" data-number-setting="hoverDelayMs" />
+        </label>
+        <label>
+          <span>Scan limit</span>
+          <input type="number" min="1" max="100" step="1" data-number-setting="scanLimit" />
+        </label>
+        <label>
+          <span>AI mode</span>
+          <select data-select-setting="aiMode">
+            <option value="off">Off</option>
+            <option value="browser">Browser stub</option>
+            <option value="cloud">Cloud stub</option>
+          </select>
+        </label>
+        <label>
+          <span>UI language</span>
+          <select data-select-setting="uiLanguage">
+            <option value="vi">Vietnamese</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Privacy & Domains</h2>
+      </div>
+      <p class="copy">Grammar Sensei stays local by default. AI cloud is only a stub in this phase and does not send text to a provider.</p>
+      <label class="wide-label">
+        <span>Disabled domains, one per line</span>
+        <textarea id="disabled-domains" spellcheck="false" placeholder="example.com"></textarea>
+      </label>
+      <button class="secondary-btn" id="save-domains" type="button">Save Domains</button>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Data Management</h2>
+      </div>
+      <div class="actions">
+        <button class="secondary-btn" id="export-data" type="button">Export JSON</button>
+        <label class="file-btn">
+          Import JSON
+          <input id="import-file" type="file" accept="application/json,.json" />
+        </label>
+        <button class="secondary-btn" id="reset-settings" type="button">Reset Settings</button>
+        <button class="danger-btn" id="clear-history" type="button">Clear History</button>
+        <button class="danger-btn" id="clear-notebook" type="button">Clear Notebook</button>
+      </div>
+      <p class="copy">Export includes settings, history, and notebook. Import replaces those local records.</p>
+    </section>
+  </main>
+
+  <script src="options.js"></script>
+</body>
+</html>

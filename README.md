@@ -15,6 +15,8 @@ The project is still plain JavaScript/HTML/CSS with no build step.
 - Side Panel detail view with explanation, examples, confusions, copy, and notebook save.
 - Review Queue in the Side Panel with Again / Hard / Good / Easy ratings.
 - Lightweight local SRS metadata: due date, review count, lapse count, interval, ease factor.
+- Options page for advanced settings, disabled domains, export/import, reset, and data clearing.
+- Stronger confidence threshold behavior to reduce broad false positives like standalone polite endings in full sentences.
 - Local grammar engine with 50 JLPT N5-N1 patterns.
 - Vietnamese-first grammar data with English kept as secondary context.
 - Basic kana-only romaji helper; kanji readings are not guessed.
@@ -71,6 +73,9 @@ GRAMMAR-SENSEI/
   sidepanel.html
   sidepanel.js
   sidepanel.css
+  options.html
+  options.js
+  options.css
   styles.css
   manifest.json
   test-analyzer.js
@@ -139,6 +144,7 @@ Defaults:
   scanLimit: 50,
   confidenceThreshold: 70,
   semanticMode: true,
+  debugMatches: false,
   aiMode: "off",
   uiLanguage: "vi",
   disabledDomains: []
@@ -176,6 +182,7 @@ node --check background.js
 node --check content.js
 node --check popup.js
 node --check sidepanel.js
+node --check options.js
 node --check core/srs.js
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
 node test-analyzer.js
@@ -190,6 +197,19 @@ node test-srs.js
 - AI mode is only scaffolded in Phase 1 and is off by default.
 - SRS is intentionally lightweight and local-only, not a full FSRS implementation.
 - OCR and subtitles are not implemented yet.
+
+## Data Management
+
+Open the extension options page to:
+
+- edit advanced settings;
+- manage disabled domains;
+- export settings/history/notebook to JSON;
+- import a Grammar Sensei JSON backup;
+- clear history or notebook separately;
+- reset settings to defaults.
+
+Import replaces local settings, history, and notebook records.
 
 ## License
 

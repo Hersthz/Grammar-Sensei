@@ -31,7 +31,9 @@
 
   function cacheKey(normalized, settings) {
     const threshold = settings.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD;
-    return Normalize.stableHash(`${Data.DB_VERSION || "db"}|${threshold}|${normalized}`);
+    const semantic = settings.semanticMode !== false ? "semantic" : "literal";
+    const debug = settings.debugMatches ? "debug" : "normal";
+    return Normalize.stableHash(`${Data.DB_VERSION || "db"}|${threshold}|${semantic}|${debug}|${normalized}`);
   }
 
   function readCache(normalized, settings, source) {
@@ -121,7 +123,8 @@
     const contextBonus = /[をがはにでへと、。！？!?]/u.test(before) || /[、。！？!?ですます]/u.test(after) ? 5 : 0;
     const ambiguityPenalty = hit.length <= 2 ? 18 : hit.length <= 3 ? 8 : 0;
     const negativePatternPenalty = hasNegativePattern(entry, text) && !entry.tags?.includes("negative") ? 8 : 0;
-    return priorityScore + lengthScore + exactVariantBonus + regexBonus + contextBonus - ambiguityPenalty - negativePatternPenalty;
+    const focusedSelectionBonus = text.length <= hit.length + 2 ? 30 : 0;
+    return priorityScore + lengthScore + exactVariantBonus + regexBonus + contextBonus + focusedSelectionBonus - ambiguityPenalty - negativePatternPenalty;
   }
 
   function confidenceFromScore(score) {
@@ -220,10 +223,15 @@
     const threshold = settings.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD;
     const visibleMatches = matches.filter((match) => match.confidence >= MIN_DISPLAY_CONFIDENCE);
     const thresholdMatches = visibleMatches.filter((match) => match.confidence >= threshold);
-    const finalMatches = thresholdMatches.length ? thresholdMatches : visibleMatches;
+    const finalMatches = thresholdMatches;
 
     if (!finalMatches.length) {
-      return buildFallback(input, normalized, detectedLanguage, source, "Không có match vượt ngưỡng confidence.", settings);
+      const fallback = buildFallback(input, normalized, detectedLanguage, source, "Không có match vượt ngưỡng confidence.", settings);
+      if (settings.debugMatches) {
+        fallback.debug_matches = visibleMatches;
+        fallback.warnings.push("Debug matches are included because debugMatches is enabled.");
+      }
+      return fallback;
     }
 
     const primary = finalMatches[0];
@@ -363,7 +371,8 @@
     const source = options.source || "manual";
     const settings = {
       confidenceThreshold: options.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD,
-      semanticMode: options.semanticMode !== false
+      semanticMode: options.semanticMode !== false,
+      debugMatches: Boolean(options.debugMatches)
     };
     const normalized = Normalize.normalizeText(input);
     const matchText = Normalize.normalizeForMatch(input);

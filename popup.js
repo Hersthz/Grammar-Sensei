@@ -14,6 +14,7 @@ const DEFAULT_SETTINGS = {
   scanLimit: 50,
   confidenceThreshold: 70,
   semanticMode: true,
+  debugMatches: false,
   aiMode: "off",
   uiLanguage: "vi",
   disabledDomains: []
@@ -480,6 +481,7 @@ function bindEvents() {
   els.clearHistory.addEventListener("click", clearHistory);
   els.toggleDomain.addEventListener("click", toggleCurrentDomain);
   els.openSidePanel.addEventListener("click", () => openDetail());
+  els.openOptions.addEventListener("click", () => chrome.runtime.openOptionsPage());
 
   document.querySelectorAll("[data-setting]").forEach((input) => {
     input.addEventListener("change", () => updateSetting(input.dataset.setting, input.checked));
@@ -533,6 +535,7 @@ async function init() {
     notebookDueCount: document.getElementById("notebook-due-count"),
     notebookTotalCount: document.getElementById("notebook-total-count"),
     openSidePanel: document.getElementById("open-side-panel"),
+    openOptions: document.getElementById("open-options"),
     patternCount: document.getElementById("pattern-count"),
     scanList: document.getElementById("scan-list"),
     scanPage: document.getElementById("scan-page"),
