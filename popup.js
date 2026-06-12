@@ -16,6 +16,10 @@ const DEFAULT_SETTINGS = {
   semanticMode: true,
   debugMatches: false,
   aiMode: "off",
+  cloudEndpoint: "",
+  aiConsentAccepted: false,
+  aiStrictMode: true,
+  aiTimeoutMs: 12000,
   uiLanguage: "vi",
   disabledDomains: []
 };

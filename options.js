@@ -16,6 +16,10 @@ const DEFAULT_SETTINGS = {
   semanticMode: true,
   debugMatches: false,
   aiMode: "off",
+  cloudEndpoint: "",
+  aiConsentAccepted: false,
+  aiStrictMode: true,
+  aiTimeoutMs: 12000,
   uiLanguage: "vi",
   disabledDomains: []
 };
@@ -53,6 +57,9 @@ function renderSettings() {
   for (const input of document.querySelectorAll("[data-number-setting]")) {
     input.value = settings[input.dataset.numberSetting];
   }
+  for (const input of document.querySelectorAll("[data-text-setting]")) {
+    input.value = settings[input.dataset.textSetting] || "";
+  }
   for (const select of document.querySelectorAll("[data-select-setting]")) {
     select.value = settings[select.dataset.selectSetting];
   }
@@ -66,6 +73,9 @@ function readSettingsFromForm() {
   }
   for (const input of document.querySelectorAll("[data-number-setting]")) {
     next[input.dataset.numberSetting] = Number(input.value);
+  }
+  for (const input of document.querySelectorAll("[data-text-setting]")) {
+    next[input.dataset.textSetting] = input.value.trim();
   }
   for (const select of document.querySelectorAll("[data-select-setting]")) {
     next[select.dataset.selectSetting] = select.value;

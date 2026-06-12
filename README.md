@@ -22,7 +22,7 @@ The project is still plain JavaScript/HTML/CSS with no build step.
 - Vietnamese-first grammar data with English kept as secondary context.
 - Basic kana-only romaji helper; kanji readings are not guessed.
 - Settings and history via Chrome storage.
-- AI mode settings and provider stubs, but AI is off by default.
+- Publish-safe AI cloud connector with backend proxy contract; AI is off by default.
 
 ## Load Unpacked
 
@@ -39,6 +39,7 @@ The project is still plain JavaScript/HTML/CSS with no build step.
 - Popup: click the extension icon, then use `Analyze Selection`, `Analyze Input`, or `Scan Page`.
 - Hover: enable `Hover mode` in Settings, then hover a Japanese sentence and click `More`.
 - Detail: click `Detail` from a card/result to open Chrome Side Panel.
+- AI: configure a backend endpoint in Options, accept the AI privacy notice, then click `Ask AI` in the Side Panel.
 
 ## Privacy
 
@@ -48,7 +49,8 @@ Grammar Sensei is local-only by default.
 - Scan Page only runs when you click `Scan Page`.
 - Hover mode is disabled by default.
 - AI mode is `off` by default.
-- AI providers are safe stubs and do not send text to cloud unless a future provider is explicitly configured.
+- Cloud AI runs only when AI mode is `cloud`, AI privacy consent is accepted, a backend endpoint is configured, and the user clicks `Ask AI`.
+- Cloud AI sends only the current sentence and compact local analysis. It does not send full page text, page URL, or page title.
 - The extension avoids input, password, email/payment-like fields, code blocks, nav, buttons, script, and style nodes.
 - You can disable the current domain from the popup.
 
@@ -70,6 +72,8 @@ GRAMMAR-SENSEI/
     srs.js
     matcher.js
     ai-provider.js
+  docs/
+    cloud-ai-contract.md
   background.js
   content.js
   popup.html
@@ -83,6 +87,7 @@ GRAMMAR-SENSEI/
   styles.css
   manifest.json
   test-analyzer.js
+  test-ai-provider.js
   test-nlp.js
   test-srs.js
 ```
@@ -154,10 +159,24 @@ Defaults:
   semanticMode: true,
   debugMatches: false,
   aiMode: "off",
+  cloudEndpoint: "",
+  aiConsentAccepted: false,
+  aiStrictMode: true,
+  aiTimeoutMs: 12000,
   uiLanguage: "vi",
   disabledDomains: []
 }
 ```
+
+## Cloud AI
+
+Grammar Sensei does not store provider API keys in the extension. Cloud mode calls a backend proxy that you control:
+
+```text
+Extension -> Your Backend -> AI Provider
+```
+
+The backend contract lives in `docs/cloud-ai-contract.md`. The extension sends the current sentence, compact local result, grammar DB version, allowed grammar IDs, and grammar candidates. It intentionally excludes page URL, page title, and full page text.
 
 ## Adding Grammar Patterns
 
@@ -206,8 +225,10 @@ node --check options.js
 node --check core/tokenizer.js
 node --check core/conjugation.js
 node --check core/srs.js
+node --check core/ai-provider.js
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
 node test-analyzer.js
+node test-ai-provider.js
 node test-nlp.js
 node test-srs.js
 ```
@@ -218,7 +239,7 @@ node test-srs.js
 - Romaji is basic kana-only; kanji readings are not guessed without a dictionary.
 - The tokenizer/conjugation helpers are rule-based and intentionally lightweight.
 - Semantic Vietnamese/English mode is keyword-based.
-- AI mode is scaffolded and off by default.
+- Cloud AI requires a separate backend proxy; the extension intentionally does not include provider API keys.
 - SRS is intentionally lightweight and local-only, not a full FSRS implementation.
 - OCR and subtitles are not implemented yet.
 

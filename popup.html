@@ -313,15 +313,19 @@
             <input class="number-input" type="number" min="1" max="100" step="1" data-number-setting="scanLimit" />
           </div>
           <div class="setting-row">
-            <div><div class="setting-label">AI mode</div><div class="setting-help">Off by default; Phase 1 uses safe stubs</div></div>
+            <div><div class="setting-label">AI mode</div><div class="setting-help">Cloud calls require endpoint and consent in Options</div></div>
             <select class="select-input" data-select-setting="aiMode">
               <option value="off">Off</option>
               <option value="browser">Browser</option>
               <option value="cloud">Cloud</option>
             </select>
           </div>
+          <div class="setting-row">
+            <div><div class="setting-label">AI privacy consent</div><div class="setting-help">Allow sending only the current sentence to your backend</div></div>
+            <label class="switch"><input type="checkbox" data-setting="aiConsentAccepted" /><span class="slider"></span></label>
+          </div>
           <div class="warning" id="ai-warning" data-visible="false">
-            AI cloud mode may send the current sentence to a selected provider in a future phase. Phase 1 does not send text to cloud.
+            Cloud AI sends only the current sentence and compact local result to the backend endpoint configured in Options.
           </div>
           <div class="actions-row">
             <button class="mini-btn" id="toggle-domain" type="button">Disable This Domain</button>

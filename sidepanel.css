@@ -301,6 +301,45 @@ h1 {
   border-color: #bfdbfe;
 }
 
+.mini-btn.ai-btn {
+  color: #7c3aed;
+  border-color: #ddd6fe;
+}
+
+.ai-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  background: #faf5ff;
+  color: #3b0764;
+}
+
+.warning-card {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #7c2d12;
+}
+
+.section-head.compact {
+  margin-bottom: 0;
+}
+
+.ai-match {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.7);
+}
+
+.ai-pattern {
+  color: #6d28d9;
+  font-size: 17px;
+  font-weight: 850;
+}
+
 .note {
   padding: 7px 8px;
   border-radius: 7px;

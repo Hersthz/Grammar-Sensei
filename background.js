@@ -21,7 +21,7 @@ importScripts(
 const EXTENSION_MENU_ID = "grammar-sensei-analyze-selection";
 const HISTORY_LIMIT = 80;
 const NOTEBOOK_LIMIT = 300;
-const STORAGE_SCHEMA_VERSION = 3;
+const STORAGE_SCHEMA_VERSION = 4;
 const SIDE_PANEL_STATE_KEY = "sidePanelState";
 
 const DEFAULT_SETTINGS = {
@@ -38,6 +38,10 @@ const DEFAULT_SETTINGS = {
   semanticMode: true,
   debugMatches: false,
   aiMode: "off",
+  cloudEndpoint: "",
+  aiConsentAccepted: false,
+  aiStrictMode: true,
+  aiTimeoutMs: 12000,
   uiLanguage: "vi",
   disabledDomains: []
 };
@@ -59,7 +63,11 @@ function normalizeSettings(items = {}) {
     hoverDelayMs: clampNumber(items.hoverDelayMs, 150, 1500, DEFAULT_SETTINGS.hoverDelayMs),
     scanLimit: clampNumber(items.scanLimit, 1, 100, DEFAULT_SETTINGS.scanLimit),
     confidenceThreshold: clampNumber(items.confidenceThreshold, 0, 99, DEFAULT_SETTINGS.confidenceThreshold),
+    aiTimeoutMs: clampNumber(items.aiTimeoutMs, 3000, 30000, DEFAULT_SETTINGS.aiTimeoutMs),
     aiMode: ["off", "browser", "cloud"].includes(items.aiMode) ? items.aiMode : DEFAULT_SETTINGS.aiMode,
+    cloudEndpoint: typeof items.cloudEndpoint === "string" ? items.cloudEndpoint.trim() : DEFAULT_SETTINGS.cloudEndpoint,
+    aiConsentAccepted: Boolean(items.aiConsentAccepted),
+    aiStrictMode: items.aiStrictMode !== false,
     uiLanguage: ["vi", "en"].includes(items.uiLanguage) ? items.uiLanguage : DEFAULT_SETTINGS.uiLanguage,
     disabledDomains: Array.isArray(items.disabledDomains) ? items.disabledDomains : []
   };
@@ -438,10 +446,20 @@ async function handleMessage(request, sender) {
     case "AI_ANALYZE_GRAMMAR": {
       const settings = await getSettings();
       const provider = AIProvider.createAIProvider(settings.aiMode);
-      return provider.analyze(request.text || "", {
+      const text = request.text || request.localResult?.input || "";
+      const localResult = request.localResult || (text ? analyzeGrammar(text, request.source || "ai", settings) : null);
+      return provider.analyze(text, {
         grammarEntries: Analyzer.entries(),
-        strictMode: true,
-        detectedLanguage: request.detectedLanguage || "unknown"
+        grammarDbVersion: GrammarSenseiData.DB_VERSION,
+        localResult,
+        strictMode: settings.aiStrictMode,
+        detectedLanguage: request.detectedLanguage || localResult?.detectedLanguage || "unknown",
+        source: request.source || localResult?.source || "ai",
+        uiLanguage: settings.uiLanguage,
+        extensionVersion: chrome.runtime.getManifest?.().version || "1.0.0",
+        aiConsentAccepted: settings.aiConsentAccepted,
+        cloudEndpoint: settings.cloudEndpoint,
+        aiTimeoutMs: settings.aiTimeoutMs
       });
     }
 

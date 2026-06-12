@@ -142,6 +142,8 @@ h1 { color: #fef3c7; font-size: 22px; line-height: 1.2; }
 }
 
 input[type="number"],
+input[type="url"],
+input[type="text"],
 select,
 textarea {
   width: 100%;

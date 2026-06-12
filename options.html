@@ -41,6 +41,8 @@
         <label><span>Hover mode</span><input type="checkbox" data-setting="hoverEnabled" /></label>
         <label><span>Semantic mode</span><input type="checkbox" data-setting="semanticMode" /></label>
         <label><span>Debug matches</span><input type="checkbox" data-setting="debugMatches" /></label>
+        <label><span>AI privacy consent</span><input type="checkbox" data-setting="aiConsentAccepted" /></label>
+        <label><span>AI strict mode</span><input type="checkbox" data-setting="aiStrictMode" /></label>
       </div>
 
       <div class="form-grid">
@@ -57,11 +59,15 @@
           <input type="number" min="1" max="100" step="1" data-number-setting="scanLimit" />
         </label>
         <label>
+          <span>AI timeout ms</span>
+          <input type="number" min="3000" max="30000" step="500" data-number-setting="aiTimeoutMs" />
+        </label>
+        <label>
           <span>AI mode</span>
           <select data-select-setting="aiMode">
             <option value="off">Off</option>
-            <option value="browser">Browser stub</option>
-            <option value="cloud">Cloud stub</option>
+            <option value="browser">Browser prepared</option>
+            <option value="cloud">Cloud backend</option>
           </select>
         </label>
         <label>
@@ -76,9 +82,21 @@
 
     <section class="panel">
       <div class="panel-head">
+        <h2>AI Cloud</h2>
+      </div>
+      <p class="copy">Cloud AI is optional. Grammar Sensei calls only your backend proxy and never stores provider API keys in the extension.</p>
+      <label class="wide-label">
+        <span>Backend endpoint</span>
+        <input type="url" data-text-setting="cloudEndpoint" spellcheck="false" placeholder="https://api.example.com/v1/grammar/analyze" />
+      </label>
+      <p class="copy">When enabled, the extension sends the current sentence, compact local analysis, grammar DB version, and candidate grammar IDs. It does not send full page text, page URL, or page title.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
         <h2>Privacy & Domains</h2>
       </div>
-      <p class="copy">Grammar Sensei stays local by default. AI cloud is only a stub in this phase and does not send text to a provider.</p>
+      <p class="copy">Grammar Sensei stays local by default. Cloud AI runs only when AI mode is Cloud, AI privacy consent is accepted, a backend endpoint is configured, and the user clicks Ask AI.</p>
       <label class="wide-label">
         <span>Disabled domains, one per line</span>
         <textarea id="disabled-domains" spellcheck="false" placeholder="example.com"></textarea>

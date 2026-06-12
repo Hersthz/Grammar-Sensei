@@ -6,6 +6,8 @@ const els = {};
 let currentState = null;
 let notebook = [];
 let stats = { total: 0, due: 0, new: 0, reviewed: 0, weak: 0 };
+let aiResult = null;
+let aiResultKey = "";
 
 function escapeHTML(value) {
   const div = document.createElement("div");
@@ -59,6 +61,58 @@ function showStatus(message) {
   window.setTimeout(() => {
     if (els.status.textContent === message) els.status.textContent = "";
   }, 2200);
+}
+
+function getAnalysisKey(analysis) {
+  return `${analysis?.input || ""}|${analysis?.primary?.id || ""}|${analysis?.primary?.matchedText || ""}`;
+}
+
+function renderAISection() {
+  if (!aiResult) return "";
+
+  if (!aiResult.available) {
+    return `
+      <div class="ai-card warning-card">
+        <div class="label">AI</div>
+        <div>${escapeHTML(aiResult.warning || "AI is not available.")}</div>
+      </div>
+    `;
+  }
+
+  const matches = aiResult.matches || [];
+  return `
+    <div class="ai-card">
+      <div class="section-head compact">
+        <h2>AI Explanation</h2>
+        <span class="badge">${escapeHTML(aiResult.mode || "cloud")}</span>
+      </div>
+      ${aiResult.japaneseEquivalent ? `
+        <div class="section">
+          <div class="label">Japanese equivalent</div>
+          <div class="code-line">${escapeHTML(aiResult.japaneseEquivalent)}</div>
+        </div>
+      ` : ""}
+      ${matches.length ? matches.map((match) => `
+        <div class="ai-match">
+          <div class="topline">
+            <div>
+              <div class="label">${escapeHTML(match.jlptLevel || "-")} · ${(Number(match.confidence || 0) * 100).toFixed(0)}%</div>
+              <div class="ai-pattern">${escapeHTML(match.pattern || match.grammarId || "-")}</div>
+            </div>
+          </div>
+          <div>${escapeHTML(match.explanationVi || match.meaningVi || "-")}</div>
+          ${match.whyMatched ? `<div class="muted">${escapeHTML(match.whyMatched)}</div>` : ""}
+          ${match.structure ? `<div class="code-line">${escapeHTML(match.structure)}</div>` : ""}
+          ${(match.possibleConfusions || []).length ? `
+            <div class="confusion-list">
+              ${match.possibleConfusions.map((item) => `<span class="confusion-pill">${escapeHTML(item)}</span>`).join("")}
+            </div>
+          ` : ""}
+        </div>
+      `).join("") : `<div class="muted">AI did not return a confident grammar match.</div>`}
+      ${aiResult.warning ? `<div class="muted">${escapeHTML(aiResult.warning)}</div>` : ""}
+    </div>
+  `;
 }
 
 function renderDetail() {
@@ -154,7 +208,10 @@ function renderDetail() {
         <div class="actions-row">
           <button class="mini-btn" id="copy-detail" type="button">Copy</button>
           <button class="mini-btn" id="save-detail" type="button">Save to Notebook</button>
+          <button class="mini-btn ai-btn" id="ask-ai" type="button">Ask AI</button>
         </div>
+
+        ${renderAISection()}
       </div>
     </article>
   `;
@@ -166,6 +223,10 @@ function renderDetail() {
 
   document.getElementById("save-detail").addEventListener("click", async () => {
     await saveCurrentAnalysis();
+  });
+
+  document.getElementById("ask-ai").addEventListener("click", async () => {
+    await askAI();
   });
 }
 
@@ -275,8 +336,50 @@ async function saveCurrentAnalysis() {
   await loadNotebook();
 }
 
+async function askAI() {
+  const analysis = currentState?.analysis;
+  if (!analysis) {
+    showStatus("No analysis to send");
+    return;
+  }
+
+  const button = document.getElementById("ask-ai");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Asking...";
+  }
+
+  try {
+    aiResult = await sendRuntimeMessage({
+      type: "AI_ANALYZE_GRAMMAR",
+      text: analysis.input,
+      localResult: analysis,
+      detectedLanguage: analysis.detectedLanguage,
+      source: "sidepanel"
+    });
+    aiResultKey = getAnalysisKey(analysis);
+    renderDetail();
+    showStatus(aiResult.available ? "AI explanation ready" : "AI needs setup");
+  } catch (error) {
+    aiResult = {
+      available: false,
+      warning: error.message,
+      matches: []
+    };
+    aiResultKey = getAnalysisKey(analysis);
+    renderDetail();
+    showStatus(error.message);
+  }
+}
+
 async function loadState() {
+  const previousKey = aiResultKey;
   currentState = await sendRuntimeMessage({ type: "GET_SIDE_PANEL_STATE" });
+  const nextKey = getAnalysisKey(currentState?.analysis);
+  if (previousKey && previousKey !== nextKey) {
+    aiResult = null;
+    aiResultKey = "";
+  }
   renderDetail();
 }
 
