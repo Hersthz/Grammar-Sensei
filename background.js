@@ -371,13 +371,25 @@ function setupContextMenu() {
   });
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
+function openOnboardingPage() {
+  if (!chrome.tabs?.create) return;
+  chrome.tabs.create({ url: chrome.runtime.getURL("onboarding.html") }, () => {
+    if (chrome.runtime.lastError) {
+      console.warn("Grammar Sensei onboarding:", chrome.runtime.lastError.message);
+    }
+  });
+}
+
+chrome.runtime.onInstalled.addListener(async (details) => {
   await ensureStorageMigration();
   const settings = await getSettings();
   await chromeSet(chrome.storage.sync, settings);
   setupContextMenu();
   if (chrome.sidePanel?.setPanelBehavior) {
     chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
+  }
+  if (details?.reason === "install") {
+    openOnboardingPage();
   }
 });
 

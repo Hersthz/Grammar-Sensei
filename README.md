@@ -84,8 +84,19 @@ GRAMMAR-SENSEI/
   options.html
   options.js
   options.css
+  onboarding.html
+  onboarding.js
+  onboarding.css
+  scripts/
+    validate-publish.js
+    package-extension.ps1
   styles.css
   manifest.json
+  docs/
+    privacy-policy.md
+    store-listing.md
+    publish-checklist.md
+    cloud-ai-contract.md
   test-analyzer.js
   test-ai-provider.js
   test-nlp.js
@@ -217,11 +228,13 @@ This is deliberately lightweight. It improves UI context and false-positive cont
 ## Checks
 
 ```powershell
+node scripts/validate-publish.js
 node --check background.js
 node --check content.js
 node --check popup.js
 node --check sidepanel.js
 node --check options.js
+node --check onboarding.js
 node --check core/tokenizer.js
 node --check core/conjugation.js
 node --check core/srs.js
@@ -232,6 +245,22 @@ node test-ai-provider.js
 node test-nlp.js
 node test-srs.js
 ```
+
+## Publish Package
+
+Before publishing, read:
+
+- `docs/privacy-policy.md`
+- `docs/store-listing.md`
+- `docs/publish-checklist.md`
+
+Then create a Chrome Web Store ZIP:
+
+```powershell
+.\scripts\package-extension.ps1
+```
+
+The ZIP is written to `dist/` and intentionally excludes tests, scripts, and draft docs from the runtime package.
 
 ## Known Limitations
 
