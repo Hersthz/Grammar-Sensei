@@ -188,6 +188,15 @@ function renderDetail() {
           </div>
         ` : ""}
 
+        ${(primary.related || []).length ? `
+          <div class="section">
+            <div class="label">Related grammar</div>
+            <div class="match-list">
+              ${primary.related.map((item) => `<span class="match-pill">${escapeHTML(item)}</span>`).join("")}
+            </div>
+          </div>
+        ` : ""}
+
         ${matches.length > 1 ? `
           <div class="section">
             <div class="label">Also detected</div>

@@ -61,7 +61,7 @@ Body:
     "romajiQuality": "basic-kana-only",
     "warnings": []
   },
-  "grammarDbVersion": "2026.06.phase1.50.phase4",
+  "grammarDbVersion": "2026.06.phase1.50.phase4.phase8",
   "allowedGrammarIds": ["ta-koto-ga-aru"],
   "grammarCandidates": [
     {

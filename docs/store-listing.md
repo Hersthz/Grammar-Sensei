@@ -20,7 +20,7 @@ Highlight Japanese text, click the floating 文 button, or use the right-click m
 
 Key features:
 
-- Local grammar detection with 100+ JLPT N5-N1 patterns.
+- Local grammar detection with 220+ JLPT N5-N1 patterns.
 - Vietnamese-first explanations with English as secondary context.
 - Floating 文 button for selected Japanese text.
 - Right-click context menu analysis.
@@ -73,4 +73,3 @@ Used to inject the content script so users can analyze selected Japanese text, s
 - Side Panel detail view.
 - Notebook/review queue.
 - Options page with privacy and AI cloud settings.
-

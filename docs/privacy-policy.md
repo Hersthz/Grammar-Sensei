@@ -90,5 +90,4 @@ Users can:
 
 ## Contact
 
-Publisher contact: TODO: add support email or website before publishing.
-
+Publisher contact: add your support email or website before publishing.

@@ -8,6 +8,7 @@ const root = __dirname;
 const files = [
   "data/grammar-database.js",
   "data/grammar-phase4-pack.js",
+  "data/grammar-phase8-pack.js",
   "core/ai-provider.js"
 ];
 

@@ -50,7 +50,8 @@
       meaning_en: entry.meaning_en,
       structure: entry.structure,
       tags: entry.tags || [],
-      confusions: entry.confusions || []
+      confusions: entry.confusions || [],
+      related: entry.related || []
     };
   }
 
@@ -68,6 +69,7 @@
       jlpt_level: match.jlpt_level,
       nuance_vi: match.nuance_vi,
       confusions: match.confusions || [],
+      related: match.related || [],
       tags: match.tags || [],
       confidence: match.confidence,
       index: match.index

@@ -190,6 +190,7 @@
       nuance_en: entry.nuance_en,
       nuance: entry.nuance_vi || entry.nuance_en,
       confusions: entry.confusions || [],
+      related: entry.related || [],
       tags: entry.tags || [],
       confidence,
       index: hit.index,
@@ -331,6 +332,7 @@
           nuance_vi: `Đây là mẫu tương đương khi diễn đạt ý "${mapping.intent}" sang tiếng Nhật; mẫu này không xuất hiện trực tiếp trong câu gốc.`,
           nuance_en: "This is an equivalent Japanese grammar pattern for the input intent, not a direct match in the source sentence.",
           confusions: entry.confusions || [],
+          related: entry.related || [],
           tags: unique([...(entry.tags || []), "semantic"]),
           confidence: mapping.confidence,
           index: lower.indexOf(keyword.toLocaleLowerCase("vi")),
@@ -436,7 +438,9 @@
         jlpt_level: entry.jlpt_level,
         meaning_vi: entry.meaning_vi,
         meaning_en: entry.meaning_en,
-        tags: entry.tags || []
+        tags: entry.tags || [],
+        confusions: entry.confusions || [],
+        related: entry.related || []
       }))
     };
   }

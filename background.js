@@ -2,13 +2,15 @@
  * Grammar Sensei - MV3 background service worker
  *
  * Orchestrates local analysis, settings, history, context menus, notebook,
- * optional AI provider stubs, and side panel state.
+ * optional AI providers, and side panel state.
  */
 
 importScripts(
   "data/grammar-database.js",
   "data/grammar-phase4-pack.js",
+  "data/grammar-phase8-pack.js",
   "data/semantic-map.js",
+  "data/semantic-phase8-map.js",
   "core/normalize.js",
   "core/romaji.js",
   "core/tokenizer.js",

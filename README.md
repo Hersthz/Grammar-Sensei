@@ -17,7 +17,7 @@ The project is still plain JavaScript/HTML/CSS with no build step.
 - Lightweight local SRS metadata: due date, review count, lapse count, interval, ease factor.
 - Options page for advanced settings, disabled domains, export/import, reset, and data clearing.
 - Stronger confidence threshold behavior to reduce broad false positives like standalone polite endings in full sentences.
-- Local grammar engine with 100+ JLPT N5-N1 patterns.
+- Local grammar engine with 220+ JLPT N5-N1 patterns.
 - Lightweight tokenizer and conjugation/context helpers for better matched phrases.
 - Vietnamese-first grammar data with English kept as secondary context.
 - Basic kana-only romaji helper; kanji readings are not guessed.
@@ -63,7 +63,9 @@ GRAMMAR-SENSEI/
   data/
     grammar-database.js
     grammar-phase4-pack.js
+    grammar-phase8-pack.js
     semantic-map.js
+    semantic-phase8-map.js
   core/
     normalize.js
     romaji.js
@@ -72,8 +74,6 @@ GRAMMAR-SENSEI/
     srs.js
     matcher.js
     ai-provider.js
-  docs/
-    cloud-ai-contract.md
   background.js
   content.js
   popup.html
@@ -143,9 +143,10 @@ Each match includes:
   examples,
   jlpt_level,
   nuance_vi,
-  nuance_en,
-  confusions,
-  tags,
+    nuance_en,
+    confusions,
+    related,
+    tags,
   confidence,
   index
 }
@@ -213,7 +214,9 @@ Edit `data/grammar-database.js`. Each entry should include:
 
 Use specific variants/regex and avoid broad patterns unless priority is low.
 
-For Phase 4 additions, prefer `data/grammar-phase4-pack.js` while the database is still being curated. Once entries are stable, they can be merged back into the base database.
+For curated expansions, use `data/grammar-phase4-pack.js` and `data/grammar-phase8-pack.js` while the database is still being reviewed. Once entries are stable, they can be merged back into the base database.
+
+Semantic Vietnamese/English intent mappings live in `data/semantic-map.js` and `data/semantic-phase8-map.js`.
 
 ## Local NLP Layer
 
