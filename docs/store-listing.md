@@ -25,6 +25,8 @@ Key features:
 - Floating 文 button for selected Japanese text.
 - Right-click context menu analysis.
 - Toolbar popup with manual input and scan page.
+- Alt+Shift+G on-page scan panel for visible Japanese sentences.
+- Shift-hover quick scan for the sentence under the cursor.
 - Optional hover tooltip, disabled by default.
 - Side Panel detail view with examples and confusions.
 - Local notebook and lightweight review queue.
@@ -68,6 +70,7 @@ Used to inject the content script so users can analyze selected Japanese text, s
 ## Screenshots To Capture
 
 - Popup with Analyze Selection, Manual Input, Scan Page, and settings.
+- On-page scan panel opened with Alt+Shift+G.
 - Floating 文 button on selected Japanese text.
 - On-page result card.
 - Side Panel detail view.

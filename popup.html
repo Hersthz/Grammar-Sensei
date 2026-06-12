@@ -285,6 +285,14 @@
             <label class="switch"><input type="checkbox" data-setting="hoverEnabled" /><span class="slider"></span></label>
           </div>
           <div class="setting-row">
+            <div><div class="setting-label">Shift scan</div><div class="setting-help">Hold Shift over Japanese text for a quick mini tooltip</div></div>
+            <label class="switch"><input type="checkbox" data-setting="shiftScanEnabled" /><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Keyboard page scan</div><div class="setting-help">Press Alt+Shift+G to scan visible Japanese sentences</div></div>
+            <label class="switch"><input type="checkbox" data-setting="keyboardScanEnabled" /><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
             <div><div class="setting-label">Save history</div><div class="setting-help">Keep recent analyses on this device</div></div>
             <label class="switch"><input type="checkbox" data-setting="saveHistory" /><span class="slider"></span></label>
           </div>
@@ -307,6 +315,10 @@
           <div class="setting-row">
             <div><div class="setting-label">Hover delay</div><div class="setting-help">Milliseconds, default: 400</div></div>
             <input class="number-input" type="number" min="150" max="1500" step="50" data-number-setting="hoverDelayMs" />
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Shift scan delay</div><div class="setting-help">Milliseconds, default: 250</div></div>
+            <input class="number-input" type="number" min="100" max="1000" step="50" data-number-setting="shiftScanDelayMs" />
           </div>
           <div class="setting-row">
             <div><div class="setting-label">Scan limit</div><div class="setting-help">Max sentences per scan</div></div>

@@ -17,6 +17,9 @@
     showMatchList: true,
     hoverEnabled: false,
     hoverDelayMs: 400,
+    shiftScanEnabled: true,
+    shiftScanDelayMs: 250,
+    keyboardScanEnabled: true,
     scanLimit: 50,
     confidenceThreshold: 70,
     semanticMode: true,
@@ -41,18 +44,24 @@
     "[aria-hidden='true']",
     "#gs-floating-btn",
     "#gs-popup-card",
-    "#gs-mini-tooltip"
+    "#gs-mini-tooltip",
+    "#gs-scan-panel",
+    "#gs-scan-toast"
   ].join(",");
 
   let settings = { ...DEFAULT_SETTINGS };
   let floatingBtn = null;
   let popupCard = null;
   let miniTooltip = null;
+  let scanPanel = null;
+  let scanToast = null;
   let hoverTimer = null;
+  let shiftScanTimer = null;
   let autoAnalyzeTimer = null;
   let lastSelection = { text: "", x: 0, y: 0 };
   let lastHoverSentence = "";
   let lastHoverAnalysis = null;
+  let lastShiftSentence = "";
 
   function containsJapanese(text) {
     return /[\u3040-\u30ff\u3400-\u9fff]/u.test(text || "");
@@ -141,7 +150,7 @@
   }
 
   function grammarSenseiContains(target) {
-    return Boolean(target?.closest?.("#gs-floating-btn, #gs-popup-card, #gs-mini-tooltip"));
+    return Boolean(target?.closest?.("#gs-floating-btn, #gs-popup-card, #gs-mini-tooltip, #gs-scan-panel, #gs-scan-toast"));
   }
 
   function removeFloatingBtn() {
@@ -159,11 +168,24 @@
     miniTooltip = null;
   }
 
+  function removeScanPanel() {
+    scanPanel?.remove();
+    scanPanel = null;
+  }
+
+  function removeScanToast() {
+    scanToast?.remove();
+    scanToast = null;
+  }
+
   function cleanup({ keepTooltip = false } = {}) {
     window.clearTimeout(autoAnalyzeTimer);
     window.clearTimeout(hoverTimer);
+    window.clearTimeout(shiftScanTimer);
     removeFloatingBtn();
     removePopupCard();
+    removeScanPanel();
+    removeScanToast();
     if (!keepTooltip) removeMiniTooltip();
   }
 
@@ -245,6 +267,20 @@
     window.setTimeout(() => {
       if (status.textContent === message) status.textContent = "";
     }, 2200);
+  }
+
+  function showScanToast(message, tone = "neutral") {
+    removeScanToast();
+    const toast = document.createElement("div");
+    toast.id = "gs-scan-toast";
+    toast.dataset.tone = tone;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    scanToast = toast;
+
+    window.setTimeout(() => {
+      if (scanToast === toast) removeScanToast();
+    }, 2400);
   }
 
   function showFloatingButton(x, y) {
@@ -588,6 +624,12 @@
   }
 
   function handleHoverMove(event) {
+    if (event.shiftKey && settings.shiftScanEnabled) {
+      scheduleShiftScan(event);
+      return;
+    }
+
+    window.clearTimeout(shiftScanTimer);
     if (!settings.enabled || !settings.hoverEnabled || currentDomainDisabled()) return;
     if (grammarSenseiContains(event.target)) return;
 
@@ -656,6 +698,134 @@
     });
 
     return { sentences, results, pageUrl: location.href, pageTitle: document.title };
+  }
+
+  function renderScanPanelItem(result, index) {
+    const primary = result.primary || {};
+    const hasMatch = Boolean(result.primary);
+    return `
+      <article class="gs-scan-panel-item" data-index="${index}">
+        <div class="gs-scan-panel-topline">
+          <div class="gs-scan-panel-pattern">${escapeHTML(primary.display || primary.grammar || "No strong match")}</div>
+          <span class="gs-jlpt-badge gs-jlpt-${escapeHTML(primary.jlpt_level || "none")}">${escapeHTML(primary.jlpt_level || "-")}</span>
+        </div>
+        <div class="gs-scan-panel-text">${escapeHTML(truncate(result.input || result.normalized_input || "", 116))}</div>
+        <div class="gs-scan-panel-meaning">${escapeHTML(primary.meaning_vi || (hasMatch ? "" : "Không có mẫu đủ ngưỡng confidence."))}</div>
+        <div class="gs-scan-panel-actions">
+          <button type="button" data-action="card">Card</button>
+          <button type="button" data-action="detail">Detail</button>
+          <button type="button" data-action="copy">Copy</button>
+        </div>
+      </article>
+    `;
+  }
+
+  function showScanPanel(scanData, source = "keyboard-scan") {
+    removeScanPanel();
+
+    const results = Array.isArray(scanData?.results) ? scanData.results : [];
+    const panel = document.createElement("aside");
+    panel.id = "gs-scan-panel";
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-label", "Grammar Sensei scan results");
+    panel.innerHTML = `
+      <div class="gs-scan-panel-header">
+        <div>
+          <div class="gs-scan-panel-title">Grammar Sensei Scan</div>
+          <div class="gs-scan-panel-subtitle">${results.length} sentence${results.length === 1 ? "" : "s"} · visible page</div>
+        </div>
+        <button class="gs-scan-panel-close" type="button" title="Close" aria-label="Close">&times;</button>
+      </div>
+      <div class="gs-scan-panel-body">
+        ${results.length ? results.slice(0, 15).map(renderScanPanelItem).join("") : `
+          <div class="gs-scan-panel-empty">
+            <div>Không tìm thấy câu tiếng Nhật đang hiển thị.</div>
+            <small>Thử cuộn đến phần có nội dung Nhật rồi scan lại.</small>
+          </div>
+        `}
+      </div>
+      <div class="gs-scan-panel-footer">
+        <span>Alt+Shift+G scan lại · giữ Shift để scan câu dưới chuột</span>
+        <span>${results.length > 15 ? `Showing 15/${results.length}` : "Local-only"}</span>
+      </div>
+    `;
+
+    panel.querySelector(".gs-scan-panel-close").addEventListener("click", (event) => {
+      event.stopPropagation();
+      removeScanPanel();
+    });
+
+    panel.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+
+      const item = button.closest(".gs-scan-panel-item");
+      const result = results[Number(item?.dataset.index)];
+      if (!result) return;
+
+      const action = button.dataset.action;
+      if (action === "card") {
+        showPopupCard(window.scrollX + window.innerWidth - 430, window.scrollY + 72, result.input || "", result);
+        return;
+      }
+
+      if (action === "detail") {
+        await openDetail(result, source);
+        showScanToast("Detail opened", "success");
+        return;
+      }
+
+      if (action === "copy") {
+        const ok = await copyText(formatAnalysisSummary(result.input || "", result));
+        showScanToast(ok ? "Copied scan result" : "Copy failed", ok ? "success" : "danger");
+      }
+    });
+
+    document.body.appendChild(panel);
+    scanPanel = panel;
+  }
+
+  async function runKeyboardPageScan() {
+    if (!settings.enabled || !settings.keyboardScanEnabled || currentDomainDisabled()) return;
+
+    showScanToast("Scanning visible Japanese...");
+    try {
+      const data = await scanPageText();
+      showScanPanel(data, "keyboard-scan");
+      const count = data.results?.length || 0;
+      showScanToast(count ? `Scan complete: ${count} sentences` : "No Japanese sentences found", count ? "success" : "neutral");
+    } catch (error) {
+      console.error("Grammar Sensei scan:", error);
+      showScanToast(error.message || "Scan failed", "danger");
+    }
+  }
+
+  function scheduleShiftScan(event) {
+    if (!settings.enabled || !settings.shiftScanEnabled || currentDomainDisabled()) return;
+    if (!event.shiftKey || grammarSenseiContains(event.target)) return;
+
+    window.clearTimeout(shiftScanTimer);
+    const delay = Math.max(100, Math.min(Number(settings.shiftScanDelayMs || 250), 1000));
+    const point = { clientX: event.clientX, clientY: event.clientY, x: event.pageX, y: event.pageY };
+
+    shiftScanTimer = window.setTimeout(async () => {
+      const sentence = getSentenceNearPoint(point.clientX, point.clientY);
+      const key = normalizeForMatch(sentence);
+      if (!sentence || key === lastShiftSentence) return;
+      lastShiftSentence = key;
+
+      const analysis = await handleAnalyze(sentence, point.x, point.y, "shift-scan", {
+        silent: true,
+        saveHistory: false
+      });
+
+      if (analysis?.primary) {
+        lastHoverAnalysis = analysis;
+        showMiniTooltip(point.x, point.y, sentence, analysis);
+      }
+    }, delay);
   }
 
   function loadSettings() {
@@ -747,6 +917,18 @@
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") cleanup();
+    const key = String(event.key || "").toLowerCase();
+    if (settings.keyboardScanEnabled && event.altKey && event.shiftKey && key === "g" && !isEditableElement(event.target)) {
+      event.preventDefault();
+      runKeyboardPageScan();
+    }
+  });
+
+  document.addEventListener("keyup", (event) => {
+    if (event.key === "Shift") {
+      window.clearTimeout(shiftScanTimer);
+      lastShiftSentence = "";
+    }
   });
 
   window.addEventListener("scroll", () => {

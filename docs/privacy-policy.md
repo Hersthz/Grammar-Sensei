@@ -11,6 +11,8 @@ Grammar Sensei is local-first by default.
 - Local grammar matching runs inside the Chrome extension.
 - Hover mode is disabled by default.
 - Page scanning happens only when the user clicks Scan Page.
+- Keyboard page scanning happens only when the user presses Alt+Shift+G.
+- Shift scan only analyzes the sentence under the cursor while the user is holding Shift.
 - Cloud AI is off by default.
 
 ## Data Processed Locally
@@ -20,6 +22,8 @@ The extension may process:
 - text selected by the user;
 - text typed into Manual Input;
 - visible Japanese sentences collected only when the user clicks Scan Page;
+- visible Japanese sentences collected only when the user presses Alt+Shift+G;
+- the Japanese sentence under the cursor while the user holds Shift;
 - grammar analysis results;
 - saved notebook items;
 - review/SRS metadata;

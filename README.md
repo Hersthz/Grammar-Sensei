@@ -11,6 +11,8 @@ The project is still plain JavaScript/HTML/CSS with no build step.
 - Use the toolbar popup to analyze the current selection.
 - Paste Japanese, Vietnamese, or English into Manual Input.
 - Scan the current visible page for Japanese sentences on demand.
+- Press `Alt+Shift+G` to scan visible Japanese sentences from the page without opening the popup.
+- Hold `Shift` while moving over Japanese text to quick-scan the sentence under the cursor.
 - Optional hover mode with a small tooltip, disabled by default.
 - Side Panel detail view with explanation, examples, confusions, copy, and notebook save.
 - Review Queue in the Side Panel with Again / Hard / Good / Easy ratings.
@@ -37,6 +39,8 @@ The project is still plain JavaScript/HTML/CSS with no build step.
 - Selection: highlight Japanese text, click the floating `文` button.
 - Context menu: highlight Japanese text, right-click, choose `Analyze Japanese grammar`.
 - Popup: click the extension icon, then use `Analyze Selection`, `Analyze Input`, or `Scan Page`.
+- Keyboard scan: press `Alt+Shift+G` on a page with visible Japanese text to open an on-page scan panel.
+- Shift scan: hold `Shift` and move the cursor over a Japanese sentence to show a mini grammar tooltip.
 - Hover: enable `Hover mode` in Settings, then hover a Japanese sentence and click `More`.
 - Detail: click `Detail` from a card/result to open Chrome Side Panel.
 - AI: configure a backend endpoint in Options, accept the AI privacy notice, then click `Ask AI` in the Side Panel.
@@ -47,6 +51,8 @@ Grammar Sensei is local-only by default.
 
 - Local grammar matching runs inside the extension.
 - Scan Page only runs when you click `Scan Page`.
+- Keyboard page scan only runs when you press `Alt+Shift+G`.
+- Shift scan only analyzes the sentence under the cursor while you are holding `Shift`.
 - Hover mode is disabled by default.
 - AI mode is `off` by default.
 - Cloud AI runs only when AI mode is `cloud`, AI privacy consent is accepted, a backend endpoint is configured, and the user clicks `Ask AI`.
@@ -166,6 +172,9 @@ Defaults:
   showMatchList: true,
   hoverEnabled: false,
   hoverDelayMs: 400,
+  shiftScanEnabled: true,
+  shiftScanDelayMs: 250,
+  keyboardScanEnabled: true,
   scanLimit: 50,
   confidenceThreshold: 70,
   semanticMode: true,

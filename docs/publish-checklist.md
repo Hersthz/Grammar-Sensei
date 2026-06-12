@@ -49,6 +49,8 @@ node test-srs.js
 - Manual Japanese input works.
 - Manual Vietnamese/English semantic input works.
 - Scan Page works on a Japanese page.
+- Alt+Shift+G opens the on-page scan panel on a Japanese page.
+- Holding Shift over Japanese text shows a mini grammar tooltip.
 - Hover mode is off by default, can be enabled, and shows mini tooltip.
 - Side Panel opens and shows detail.
 - Save to Notebook works.
@@ -79,4 +81,3 @@ Run:
 ```
 
 Upload the generated ZIP from `dist/`.
-
