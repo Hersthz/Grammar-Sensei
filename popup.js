@@ -191,6 +191,23 @@ function renderSettings() {
   els.toggleDomain.textContent = isCurrentDomainDisabled() ? "Enable This Domain" : "Disable This Domain";
 }
 
+function renderSecondaryMatches(matches) {
+  const secondaryMatches = (matches || []).slice(1);
+  if (!secondaryMatches.length) return "";
+  return `
+    <div class="detected-matches">
+      <div class="mini-label">Also detected (${secondaryMatches.length})</div>
+      <div class="match-chip-row">
+        ${secondaryMatches.map((match) => `
+          <span class="match-chip" title="${escapeHTML(match.matchedText || match.detected || "")}">
+            ${escapeHTML(match.display || match.grammar)} · ${escapeHTML(match.jlpt_level || "-")} · ${escapeHTML(match.confidence || "-")}%
+          </span>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
 function renderResult(container, selectedText, analysis) {
   const primary = analysis.primary || analysis;
   container.dataset.visible = "true";
@@ -205,6 +222,7 @@ function renderResult(container, selectedText, analysis) {
     <div class="result-text">${escapeHTML(truncate(selectedText, 140))}</div>
     <div class="result-meta">${escapeHTML(primary.structure || "-")}</div>
     ${analysis.romaji ? `<div class="result-meta">Romaji: ${escapeHTML(analysis.romaji)}</div>` : ""}
+    ${renderSecondaryMatches(analysis.matches)}
     <div class="actions-row">
       <button class="mini-btn" type="button" data-result-action="copy">Copy</button>
       <button class="mini-btn" type="button" data-result-action="show">Show On Page</button>
@@ -255,6 +273,7 @@ function renderScanResults(results) {
           <span class="badge">${escapeHTML(primary?.jlpt_level || "-")}</span>
         </div>
         <div class="result-meta">${escapeHTML(primary?.meaning_vi || result.meaning || "Không có match đủ chắc.")}</div>
+        ${renderSecondaryMatches(result.matches)}
         <div class="actions-row">
           <button class="mini-btn" type="button" data-scan-copy="${index}">Copy</button>
           <button class="mini-btn" type="button" data-scan-detail="${index}">Detail</button>

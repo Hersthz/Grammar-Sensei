@@ -68,44 +68,79 @@
     }
   }
 
-  function findEntryHit(entry, text) {
+  function findEntryHits(entry, text) {
     const hits = [];
+    const seen = new Set();
+
+    function addHit(hit) {
+      if (!hit.text || hit.length <= 0) return;
+      const key = `${hit.index}|${hit.text}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      hits.push(hit);
+    }
 
     for (const variant of entry.variants || [entry.display || entry.pattern]) {
-      const index = text.indexOf(variant);
-      if (index >= 0) {
-        hits.push({
+      if (!variant) continue;
+      let index = text.indexOf(variant);
+      while (index >= 0) {
+        addHit({
           text: variant,
           index,
           length: variant.length,
           exactVariant: variant === entry.display || variant === entry.pattern,
           regex: false
         });
+        index = text.indexOf(variant, index + Math.max(1, variant.length));
       }
     }
 
     if (entry.regex) {
-      const regex = compileRegex(entry.regex);
-      const match = regex ? text.match(regex) : null;
-      if (match && typeof match.index === "number") {
-        hits.push({
-          text: match[0],
-          index: match.index,
-          length: match[0].length,
-          exactVariant: match[0] === entry.display || match[0] === entry.pattern,
-          regex: true
-        });
+      try {
+        const regex = new RegExp(entry.regex, "gu");
+        let match = regex.exec(text);
+        while (match && typeof match.index === "number") {
+          addHit({
+            text: match[0],
+            index: match.index,
+            length: match[0].length,
+            exactVariant: match[0] === entry.display || match[0] === entry.pattern,
+            regex: true
+          });
+          if (match[0].length === 0) regex.lastIndex += 1;
+          match = regex.exec(text);
+        }
+      } catch (error) {
+        console.warn("Grammar Sensei: invalid regex", entry.regex, error);
       }
     }
-
-    if (!hits.length) return null;
 
     return hits.sort((a, b) => {
       if (b.length !== a.length) return b.length - a.length;
       if (Number(b.exactVariant) !== Number(a.exactVariant)) return Number(b.exactVariant) - Number(a.exactVariant);
       if (Number(b.regex) !== Number(a.regex)) return Number(b.regex) - Number(a.regex);
       return a.index - b.index;
-    })[0];
+    });
+  }
+
+  function findEntryHit(entry, text) {
+    return findEntryHits(entry, text)[0] || null;
+  }
+
+  function findEntryMatchHits(entry, text) {
+    const selected = [];
+    const occupied = [];
+
+    for (const hit of findEntryHits(entry, text)) {
+      const start = hit.index;
+      const end = hit.index + hit.length;
+      const overlaps = occupied.some((range) => start < range.end && end > range.start);
+      if (overlaps && hit.length <= 3) continue;
+      selected.push(hit);
+      occupied.push({ start, end });
+    }
+
+    return selected;
   }
 
   function hasNegativePattern(entry, text) {
@@ -246,9 +281,8 @@
     const threshold = settings.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD;
     const visibleMatches = matches.filter((match) => match.confidence >= MIN_DISPLAY_CONFIDENCE);
     const thresholdMatches = visibleMatches.filter((match) => match.confidence >= threshold);
-    const finalMatches = thresholdMatches;
 
-    if (!finalMatches.length) {
+    if (!thresholdMatches.length) {
       const fallback = buildFallback(input, normalized, detectedLanguage, source, "Không có match vượt ngưỡng confidence.", settings);
       if (settings.debugMatches) {
         fallback.debug_matches = visibleMatches;
@@ -257,7 +291,11 @@
       return fallback;
     }
 
+    // Keep primary conservative, but expose lower-confidence secondary grammar
+    // when the sentence already has at least one strong local match.
+    const finalMatches = visibleMatches;
     const primary = finalMatches[0];
+    const lowerConfidenceSecondaryCount = finalMatches.filter((match) => match.confidence < threshold).length;
     return {
       input,
       normalized_input: normalized,
@@ -271,7 +309,9 @@
       romaji: Romaji.toRomaji(input),
       romajiQuality: Romaji.romajiQuality,
       translation_vi: "",
-      warnings: [],
+      warnings: lowerConfidenceSecondaryCount
+        ? [`${lowerConfidenceSecondaryCount} secondary match(es) are below the primary confidence threshold.`]
+        : [],
       grammar: primary.grammar,
       meaning: primary.meaning_vi,
       structure: primary.structure,
@@ -288,15 +328,15 @@
     if (cached) return cached;
 
     const matches = entries()
-      .map((entry) => {
-        const hit = findEntryHit(entry, normalized);
-        if (!hit) return null;
-        const score = scoreMatch(entry, hit, normalized);
-        const match = toResultMatch(entry, hit, normalized, score);
-        match.priority = entry.priority || 0;
-        return match;
+      .flatMap((entry) => {
+        const hits = findEntryMatchHits(entry, normalized);
+        return hits.map((hit) => {
+          const score = scoreMatch(entry, hit, normalized);
+          const match = toResultMatch(entry, hit, normalized, score);
+          match.priority = entry.priority || 0;
+          return match;
+        });
       })
-      .filter(Boolean)
       .sort(sortMatches);
 
     const result = buildResult(input, normalized, detectedLanguage, source, matches, settings);

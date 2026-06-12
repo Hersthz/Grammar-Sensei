@@ -321,14 +321,15 @@
 
   function renderMatchList(matches) {
     if (!settings.showMatchList || !matches || matches.length <= 1) return "";
+    const secondaryMatches = matches.slice(1);
     return `
       <section class="gs-section gs-match-list">
         <div class="gs-section-label">Cũng phát hiện</div>
         <div class="gs-match-grid">
-          ${matches.slice(1, 8).map((match) => `
-            <div class="gs-match-pill">
+          ${secondaryMatches.map((match) => `
+            <div class="gs-match-pill" title="${escapeHTML(match.matchedText || match.detected || "")}">
               <span>${escapeHTML(match.display || match.grammar)}</span>
-              <small>${escapeHTML(match.jlpt_level)}</small>
+              <small>${escapeHTML(match.jlpt_level)} · ${escapeHTML(match.confidence || "-")}%</small>
             </div>
           `).join("")}
         </div>
@@ -703,6 +704,7 @@
   function renderScanPanelItem(result, index) {
     const primary = result.primary || {};
     const hasMatch = Boolean(result.primary);
+    const secondaryCount = Math.max(0, (result.matches || []).length - 1);
     return `
       <article class="gs-scan-panel-item" data-index="${index}">
         <div class="gs-scan-panel-topline">
@@ -711,6 +713,12 @@
         </div>
         <div class="gs-scan-panel-text">${escapeHTML(truncate(result.input || result.normalized_input || "", 116))}</div>
         <div class="gs-scan-panel-meaning">${escapeHTML(primary.meaning_vi || (hasMatch ? "" : "Không có mẫu đủ ngưỡng confidence."))}</div>
+        ${secondaryCount ? `
+          <div class="gs-scan-panel-matches">
+            +${secondaryCount} mẫu khác:
+            ${(result.matches || []).slice(1).map((match) => `<span>${escapeHTML(match.display || match.grammar)} · ${escapeHTML(match.jlpt_level || "-")}</span>`).join("")}
+          </div>
+        ` : ""}
         <div class="gs-scan-panel-actions">
           <button type="button" data-action="card">Card</button>
           <button type="button" data-action="detail">Detail</button>

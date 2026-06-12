@@ -125,6 +125,7 @@ function renderDetail() {
   }
 
   const matches = analysis.matches || [];
+  const secondaryMatches = matches.slice(1);
   const example = primary.example || {};
   els.detail.innerHTML = `
     <article class="detail-card">
@@ -197,12 +198,14 @@ function renderDetail() {
           </div>
         ` : ""}
 
-        ${matches.length > 1 ? `
+        ${secondaryMatches.length ? `
           <div class="section">
-            <div class="label">Also detected</div>
+            <div class="label">Also detected (${secondaryMatches.length})</div>
             <div class="match-list">
-              ${matches.slice(1, 10).map((match) => `
-                <span class="match-pill"><strong>${escapeHTML(match.jlpt_level)}</strong>${escapeHTML(match.display || match.grammar)}</span>
+              ${secondaryMatches.map((match) => `
+                <span class="match-pill" title="${escapeHTML(match.matchedText || match.detected || "")}">
+                  <strong>${escapeHTML(match.jlpt_level)}</strong>${escapeHTML(match.display || match.grammar)} · ${escapeHTML(match.confidence || "-")}%
+                </span>
               `).join("")}
             </div>
           </div>
