@@ -6,6 +6,8 @@
   const Data = global.GrammarSenseiData = global.GrammarSenseiData || {};
   const Normalize = Core.Normalize;
   const Romaji = Core.Romaji;
+  const Tokenizer = Core.Tokenizer;
+  const Conjugation = Core.Conjugation;
 
   const ANALYSIS_CACHE_LIMIT = 200;
   const DEFAULT_CONFIDENCE_THRESHOLD = 70;
@@ -132,6 +134,10 @@
   }
 
   function expandMatchedText(text, hit) {
+    if (Conjugation?.expandGrammarPhrase) {
+      return Conjugation.expandGrammarPhrase(text, hit).matchedText;
+    }
+
     const boundary = /[はがをにでへともの、。！？!?\s]/u;
     let start = hit.index;
     let budget = 6;
@@ -149,12 +155,28 @@
   function toResultMatch(entry, hit, text, score) {
     const example = entry.examples?.[0] || null;
     const confidence = confidenceFromScore(score);
+    const context = Conjugation?.inferMatchContext
+      ? Conjugation.inferMatchContext(text, hit)
+      : { matchedText: expandMatchedText(text, hit), form: "unknown", leftContext: "", phraseStart: hit.index };
+    const tokenWindow = Tokenizer?.getTokenWindow
+      ? Tokenizer.getTokenWindow(text, hit.index, hit.index + hit.length)
+      : { before: [], inside: [], after: [] };
     return {
       id: entry.id,
       grammar: entry.pattern,
       display: entry.display || entry.pattern,
       detected: hit.text,
-      matchedText: expandMatchedText(text, hit),
+      matchedText: context.matchedText,
+      conjugation: {
+        form: context.form,
+        leftContext: context.leftContext || "",
+        phraseStart: context.phraseStart ?? hit.index
+      },
+      tokens: {
+        before: tokenWindow.before,
+        inside: tokenWindow.inside,
+        after: tokenWindow.after
+      },
       meaning_vi: entry.meaning_vi,
       meaning_en: entry.meaning_en,
       meaning: entry.meaning_vi || entry.meaning_en,

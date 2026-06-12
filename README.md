@@ -17,7 +17,8 @@ The project is still plain JavaScript/HTML/CSS with no build step.
 - Lightweight local SRS metadata: due date, review count, lapse count, interval, ease factor.
 - Options page for advanced settings, disabled domains, export/import, reset, and data clearing.
 - Stronger confidence threshold behavior to reduce broad false positives like standalone polite endings in full sentences.
-- Local grammar engine with 50 JLPT N5-N1 patterns.
+- Local grammar engine with 100+ JLPT N5-N1 patterns.
+- Lightweight tokenizer and conjugation/context helpers for better matched phrases.
 - Vietnamese-first grammar data with English kept as secondary context.
 - Basic kana-only romaji helper; kanji readings are not guessed.
 - Settings and history via Chrome storage.
@@ -47,7 +48,7 @@ Grammar Sensei is local-only by default.
 - Scan Page only runs when you click `Scan Page`.
 - Hover mode is disabled by default.
 - AI mode is `off` by default.
-- Phase 1 AI providers are safe stubs and do not send text to cloud.
+- AI providers are safe stubs and do not send text to cloud unless a future provider is explicitly configured.
 - The extension avoids input, password, email/payment-like fields, code blocks, nav, buttons, script, and style nodes.
 - You can disable the current domain from the popup.
 
@@ -59,10 +60,13 @@ Grammar Sensei is local-only by default.
 GRAMMAR-SENSEI/
   data/
     grammar-database.js
+    grammar-phase4-pack.js
     semantic-map.js
   core/
     normalize.js
     romaji.js
+    tokenizer.js
+    conjugation.js
     srs.js
     matcher.js
     ai-provider.js
@@ -79,6 +83,8 @@ GRAMMAR-SENSEI/
   styles.css
   manifest.json
   test-analyzer.js
+  test-nlp.js
+  test-srs.js
 ```
 
 The service worker loads `data/` and `core/` with classic `importScripts`, keeping the extension no-build and MV3-friendly.
@@ -112,6 +118,8 @@ Each match includes:
   display,
   detected,
   matchedText,
+  conjugation,
+  tokens,
   meaning_vi,
   meaning_en,
   structure,
@@ -175,6 +183,18 @@ Edit `data/grammar-database.js`. Each entry should include:
 
 Use specific variants/regex and avoid broad patterns unless priority is low.
 
+For Phase 4 additions, prefer `data/grammar-phase4-pack.js` while the database is still being curated. Once entries are stable, they can be merged back into the base database.
+
+## Local NLP Layer
+
+Phase 4 adds a small no-dependency NLP layer:
+
+- `core/tokenizer.js` splits Japanese text into lightweight tokens, particles, punctuation, and grammar-ending chunks.
+- `core/conjugation.js` infers coarse surface forms such as `te-form`, `ta-form`, `nai-form`, and polite endings.
+- `core/matcher.js` includes `conjugation` and nearby `tokens` on each match.
+
+This is deliberately lightweight. It improves UI context and false-positive control without turning the extension into a heavy parser.
+
 ## Checks
 
 ```powershell
@@ -183,18 +203,22 @@ node --check content.js
 node --check popup.js
 node --check sidepanel.js
 node --check options.js
+node --check core/tokenizer.js
+node --check core/conjugation.js
 node --check core/srs.js
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
 node test-analyzer.js
+node test-nlp.js
 node test-srs.js
 ```
 
 ## Known Limitations
 
 - The local matcher is not a full Japanese parser.
-- Romaji is basic kana-only; kanji readings are not guessed without a dictionary/tokenizer.
+- Romaji is basic kana-only; kanji readings are not guessed without a dictionary.
+- The tokenizer/conjugation helpers are rule-based and intentionally lightweight.
 - Semantic Vietnamese/English mode is keyword-based.
-- AI mode is only scaffolded in Phase 1 and is off by default.
+- AI mode is scaffolded and off by default.
 - SRS is intentionally lightweight and local-only, not a full FSRS implementation.
 - OCR and subtitles are not implemented yet.
 

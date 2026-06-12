@@ -7,9 +7,12 @@ const assert = require("assert");
 const root = __dirname;
 const files = [
   "data/grammar-database.js",
+  "data/grammar-phase4-pack.js",
   "data/semantic-map.js",
   "core/normalize.js",
   "core/romaji.js",
+  "core/tokenizer.js",
+  "core/conjugation.js",
   "core/ai-provider.js",
   "core/matcher.js"
 ];
@@ -42,7 +45,17 @@ const cases = [
   ["彼はもう着いたはずです。", "hazu", "N3"],
   ["約束は守るべきです。", "beki", "N3"],
   ["雨にもかかわらず、試合は行われた。", "nimo-kakawarazu", "N2"],
-  ["認めざるを得ない。", "zaru-wo-enai", "N1"]
+  ["認めざるを得ない。", "zaru-wo-enai", "N1"],
+  ["この本は読みやすいです。", "yasui", "N4"],
+  ["この漢字は覚えにくいです。", "nikui", "N4"],
+  ["友達に手伝ってもらいました。", "te-morau", "N4"],
+  ["先生が説明してくれました。", "te-kureru", "N4"],
+  ["雨のせいで試合が中止になった。", "sei-de", "N3"],
+  ["先生のおかげで合格できました。", "okage-de", "N3"],
+  ["若いうちにたくさん旅行したい。", "uchi-ni", "N3"],
+  ["先生に聞けばいいです。", "ba-ii", "N4"],
+  ["待つしかありません。", "shika-nai", "N4"],
+  ["日本語なら、少し話せます。", "nara", "N4"]
 ];
 
 for (const [sentence, expectedId, expectedJlpt] of cases) {

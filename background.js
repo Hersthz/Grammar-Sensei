@@ -7,9 +7,12 @@
 
 importScripts(
   "data/grammar-database.js",
+  "data/grammar-phase4-pack.js",
   "data/semantic-map.js",
   "core/normalize.js",
   "core/romaji.js",
+  "core/tokenizer.js",
+  "core/conjugation.js",
   "core/srs.js",
   "core/ai-provider.js",
   "core/matcher.js"
