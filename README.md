@@ -1,127 +1,118 @@
-# Grammar Sensei – Japanese Grammar Detector
+# Grammar Sensei - Japanese Grammar Detector
 
-> A lightweight Chrome Extension that helps Japanese learners understand **grammar patterns** directly on any webpage.
+Grammar Sensei is a lightweight Chrome Extension for Japanese learners. It lets you select Japanese text on any webpage and instantly see grammar patterns, meanings, structures, examples, JLPT levels, and related matches.
 
-![Chrome Extension](https://img.shields.io/badge/Manifest-V3-blue?logo=googlechrome)
-![JLPT](https://img.shields.io/badge/JLPT-N5–N1-teal)
-![License](https://img.shields.io/badge/license-MIT-green)
+The extension is built with plain JavaScript, HTML, and CSS. There is no build step and no external dependency.
 
----
+## Features
 
-## ✨ Features
+- Detects Japanese text selections on normal webpages.
+- Shows a floating `文` action button beside the selection.
+- Adds a right-click context menu item: `Analyze Japanese grammar`.
+- Analyzes grammar offline with a local database of 38 JLPT N5-N1 patterns.
+- Supports common variants and contractions such as `ちゃう`, `じゃないか`, `なきゃ`, and `かも`.
+- Displays multiple detected patterns when a sentence contains nested grammar.
+- Includes confidence, tags, Sensei notes, examples, and copyable summaries.
+- Toolbar popup includes settings, current-selection analysis, and local history.
+- Uses `chrome.storage` for synced settings and local history.
 
-- **Inline grammar analysis** — highlight Japanese text, click, and learn
-- **JLPT level estimation** — N5 through N1
-- **Clean popup card** — shows pattern, meaning, structure & example
-- **Zero dependencies** — vanilla JS, HTML, CSS only
-- **Works offline** — uses a built-in mock grammar database (20 patterns)
-- **Ready for AI** — swap the mock function for a real API in minutes
+## Quick Start
 
----
+1. Open Chrome and go to `chrome://extensions`.
+2. Enable `Developer mode`.
+3. Click `Load unpacked`.
+4. Select this `Grammar-Sensei` folder.
+5. Open a normal webpage that contains Japanese text.
+6. Highlight a Japanese phrase, then click the floating `文` button.
 
-## 🚀 Quick Start
+You can also right-click selected Japanese text and choose `Analyze Japanese grammar`, or click the extension icon and use `Analyze Current Selection`.
 
-1. Clone or download this folder.
-2. Open Chrome and navigate to `chrome://extensions`.
-3. Enable **Developer mode** (toggle in top-right).
-4. Click **Load unpacked** → select the `Grammar-Sensei` folder.
-5. Visit any webpage with Japanese text.
-6. **Highlight** Japanese text → click the floating **文** button → read the grammar breakdown!
+## Project Structure
 
----
-
-## 📁 Project Structure
-
-```
+```text
 Grammar-Sensei/
-├── manifest.json      # Extension manifest (V3)
-├── background.js      # Service worker + mock grammar analyser
-├── content.js         # Selection detection + popup rendering
-├── styles.css         # Injected content styles
-├── popup.html         # Extension toolbar popup
-├── popup.js           # Popup script
-├── icons/             # Extension icons (16, 48, 128)
-└── README.md          # You are here
+├── manifest.json      # Chrome Extension Manifest V3 configuration
+├── background.js      # Service worker, grammar engine, settings, history
+├── content.js         # Selection detection and on-page analysis UI
+├── styles.css         # Injected UI styles for the content script
+├── popup.html         # Toolbar popup UI
+├── popup.js           # Toolbar popup behavior
+├── icons/             # Extension icons
+└── README.md
 ```
 
----
+## How It Works
 
-## 🎯 How It Works
-
-```
+```text
 User selects Japanese text
-        │
-        ▼
-  content.js detects selection & shows floating button
-        │
-        ▼
-  User clicks button → content.js sends text to background.js
-        │
-        ▼
-  background.js → analyzeJapaneseGrammar(text) → returns JSON
-        │
-        ▼
-  content.js renders popup card with grammar explanation
+        |
+        v
+content.js detects Japanese characters
+        |
+        v
+Floating button, context menu, or toolbar popup triggers analysis
+        |
+        v
+background.js runs analyzeJapaneseGrammar(text)
+        |
+        v
+background.js returns primary match + all detected matches
+        |
+        v
+content.js and popup.js render the result and optionally save history
 ```
 
----
+## Settings
 
-## 🤖 AI Integration (Future)
+The toolbar popup lets users control:
 
-The mock function `analyzeJapaneseGrammar()` in `background.js` can be replaced with a real API call.
-Use the prompts below with any LLM API (OpenAI, Anthropic, Gemini, etc.).
+- Enable or disable Grammar Sensei.
+- Show or hide the floating button.
+- Auto-analyze immediately after selecting text.
+- Save analysis history locally.
+- Use compact on-page cards.
+- Show or hide additional match lists.
 
-### System Prompt
+## Extending The Grammar Database
 
-```
-You are a Japanese grammar teacher helping JLPT learners.
-Explain grammar structures only.
-Do not translate the entire sentence.
-Be concise and beginner-friendly.
-```
+Add or edit entries in `GRAMMAR_DATABASE` inside `background.js`.
 
-### User Prompt Template
+Each entry supports:
 
-```
-Analyze this Japanese sentence:
+- `pattern`: canonical display pattern.
+- `variants`: exact text variants to detect.
+- `regex`: optional Unicode regular expression for inflected forms.
+- `meaning`, `structure`, `example`, `jlpt_level`, `nuance`, `tags`.
+- `priority`: ranking weight when multiple patterns match.
 
-{sentence}
+## Future AI Integration
 
-Identify grammar patterns and output:
-
-Grammar:
-Meaning:
-Structure:
-Example:
-JLPT Level:
-```
-
-### Expected JSON Response Shape
+The local engine is intentionally shaped like an API result. To integrate an LLM later, replace or augment `analyzeJapaneseGrammar()` in `background.js`, and return the same response shape:
 
 ```json
 {
-  "grammar": "ている",
-  "meaning": "Ongoing action or resulting state (progressive / stative)",
-  "structure": "Verb て-form + いる",
-  "example": "彼は本を読んでいる。(He is reading a book.)",
-  "jlpt_level": "N5"
+  "primary": {
+    "grammar": "ている",
+    "meaning": "Ongoing action or resulting state.",
+    "structure": "Verb て-form + いる",
+    "example": "彼は本を読んでいる。 (He is reading a book.)",
+    "jlpt_level": "N5"
+  },
+  "matches": []
 }
 ```
 
----
+## Verification
 
-## 🔧 Extending
+Static checks used during development:
 
-| Want to…                        | Edit…                |
-|--------------------------------|----------------------|
-| Add more grammar patterns      | `background.js` – `GRAMMAR_DATABASE` array |
-| Change popup styling           | `styles.css`         |
-| Add settings / dark mode toggle| `popup.html` + `popup.js` |
-| Connect a real AI API          | `background.js` – `analyzeJapaneseGrammar()` |
-| Add history / bookmarks        | Use `chrome.storage.local` |
+```powershell
+node --check background.js
+node --check content.js
+node --check popup.js
+Get-Content manifest.json | ConvertFrom-Json | Out-Null
+```
 
----
+## License
 
-## 📜 License
-
-MIT — free to use, modify, and distribute.
+MIT

@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Grammar Sensei – Japanese Grammar Detector",
+  "name": "Grammar Sensei - Japanese Grammar Detector",
   "version": "1.0.0",
   "description": "Highlight Japanese text on any webpage and instantly get grammar explanations, JLPT levels, and usage examples.",
   "permissions": [
     "activeTab",
-    "scripting"
+    "contextMenus",
+    "storage"
   ],
   "host_permissions": [
     "<all_urls>"
