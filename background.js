@@ -10,6 +10,7 @@ importScripts(
   "data/semantic-map.js",
   "core/normalize.js",
   "core/romaji.js",
+  "core/srs.js",
   "core/ai-provider.js",
   "core/matcher.js"
 );
@@ -38,6 +39,7 @@ const DEFAULT_SETTINGS = {
 
 const Analyzer = GrammarSenseiCore.Analyzer;
 const AIProvider = GrammarSenseiCore.AIProvider;
+const SRS = GrammarSenseiCore.SRS;
 
 function nowIso() {
   return new Date().toISOString();
@@ -162,32 +164,61 @@ async function clearHistory() {
 
 async function getNotebook() {
   const { notebook } = await chromeGet(chrome.storage.local, { notebook: [] });
-  return Array.isArray(notebook) ? notebook : [];
+  const items = Array.isArray(notebook) ? notebook.map((item) => SRS.normalizeNotebookItem(item)) : [];
+  return items.sort((a, b) => new Date(a.nextReviewAt).getTime() - new Date(b.nextReviewAt).getTime());
 }
 
 async function saveNotebookItem(payload) {
-  const analysis = payload.analysis || null;
-  const primary = analysis?.primary || payload.primary || null;
-  if (!primary) throw new Error("Cannot save notebook item without a grammar match.");
-
-  const item = {
-    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    grammarId: primary.id,
-    grammar: primary.display || primary.grammar,
-    sentence: String(payload.sentence || analysis?.input || "").slice(0, 1000),
-    matchedText: primary.matchedText || primary.detected || "",
-    pageUrl: payload.pageUrl || "",
-    pageTitle: payload.pageTitle || "",
-    note: payload.note || "",
-    createdAt: nowIso(),
-    nextReviewAt: "",
-    reviewState: "new"
-  };
-
+  const item = SRS.createNotebookItem(payload);
   const notebook = await getNotebook();
   const deduped = notebook.filter((entry) => !(entry.sentence === item.sentence && entry.grammarId === item.grammarId));
   await chromeSet(chrome.storage.local, { notebook: [item, ...deduped].slice(0, NOTEBOOK_LIMIT) });
   return item;
+}
+
+async function setNotebook(notebook) {
+  const items = (notebook || []).map((item) => SRS.normalizeNotebookItem(item)).slice(0, NOTEBOOK_LIMIT);
+  await chromeSet(chrome.storage.local, { notebook: items });
+  return items;
+}
+
+async function reviewNotebookItem(id, rating) {
+  if (!["again", "hard", "good", "easy"].includes(rating)) {
+    throw new Error("Unknown review rating.");
+  }
+
+  const notebook = await getNotebook();
+  const index = notebook.findIndex((item) => item.id === id);
+  if (index < 0) throw new Error("Notebook item not found.");
+
+  const reviewed = SRS.reviewNotebookItem(notebook[index], rating);
+  notebook[index] = reviewed;
+  await setNotebook(notebook);
+  return reviewed;
+}
+
+async function updateNotebookItem(payload) {
+  const notebook = await getNotebook();
+  const index = notebook.findIndex((item) => item.id === payload.id);
+  if (index < 0) throw new Error("Notebook item not found.");
+
+  notebook[index] = SRS.normalizeNotebookItem({
+    ...notebook[index],
+    note: typeof payload.note === "string" ? payload.note.slice(0, 1000) : notebook[index].note
+  });
+  await setNotebook(notebook);
+  return notebook[index];
+}
+
+async function deleteNotebookItem(id) {
+  const notebook = await getNotebook();
+  const next = notebook.filter((item) => item.id !== id);
+  await setNotebook(next);
+  return { deleted: notebook.length !== next.length, total: next.length };
+}
+
+async function getNotebookStats() {
+  return SRS.getNotebookStats(await getNotebook());
 }
 
 async function setSidePanelState(data) {
@@ -327,6 +358,18 @@ async function handleMessage(request, sender) {
 
     case "GET_NOTEBOOK":
       return getNotebook();
+
+    case "GET_NOTEBOOK_STATS":
+      return getNotebookStats();
+
+    case "REVIEW_NOTEBOOK_ITEM":
+      return reviewNotebookItem(request.id, request.rating);
+
+    case "UPDATE_NOTEBOOK_ITEM":
+      return updateNotebookItem(request.item || request);
+
+    case "DELETE_NOTEBOOK_ITEM":
+      return deleteNotebookItem(request.id);
 
     case "SET_SIDE_PANEL_STATE":
       return setSidePanelState(request.data || request);

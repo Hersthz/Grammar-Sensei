@@ -21,6 +21,7 @@ const DEFAULT_SETTINGS = {
 
 let settings = { ...DEFAULT_SETTINGS };
 let historyItems = [];
+let notebookStats = { total: 0, due: 0 };
 let currentSelection = "";
 let currentAnalysis = null;
 let activeTab = null;
@@ -257,8 +258,6 @@ function renderScanResults(results) {
 }
 
 function renderHistory() {
-  els.historyCount.textContent = String(historyItems.length);
-
   if (!historyItems.length) {
     els.historyList.innerHTML = `<div class="empty">No saved analyses yet.</div>`;
     return;
@@ -291,6 +290,12 @@ async function refreshSummary() {
 async function refreshHistory() {
   historyItems = await sendRuntimeMessage({ type: "GET_HISTORY" });
   renderHistory();
+}
+
+async function refreshNotebookStats() {
+  notebookStats = await sendRuntimeMessage({ type: "GET_NOTEBOOK_STATS" });
+  els.notebookDueCount.textContent = String(notebookStats.due || 0);
+  els.notebookTotalCount.textContent = String(notebookStats.total || 0);
 }
 
 async function analyzeCurrentSelection() {
@@ -424,6 +429,7 @@ async function saveNotebook(analysis = currentAnalysis) {
     }
   });
   showToast("Saved");
+  await refreshNotebookStats();
 }
 
 async function updateSetting(key, value) {
@@ -521,10 +527,11 @@ async function init() {
     aiWarning: document.getElementById("ai-warning"),
     clearHistory: document.getElementById("clear-history"),
     clearManual: document.getElementById("clear-manual"),
-    historyCount: document.getElementById("history-count"),
     historyList: document.getElementById("history-list"),
     manualInput: document.getElementById("manual-input"),
     manualResult: document.getElementById("manual-result"),
+    notebookDueCount: document.getElementById("notebook-due-count"),
+    notebookTotalCount: document.getElementById("notebook-total-count"),
     openSidePanel: document.getElementById("open-side-panel"),
     patternCount: document.getElementById("pattern-count"),
     scanList: document.getElementById("scan-list"),
@@ -542,7 +549,7 @@ async function init() {
 
   try {
     activeTab = await getActiveTab().catch(() => null);
-    await Promise.all([refreshSettings(), refreshSummary(), refreshHistory()]);
+    await Promise.all([refreshSettings(), refreshSummary(), refreshHistory(), refreshNotebookStats()]);
   } catch (error) {
     els.selectionHint.textContent = error.message;
   }

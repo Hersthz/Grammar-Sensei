@@ -5,6 +5,7 @@
 const els = {};
 let currentState = null;
 let notebook = [];
+let stats = { total: 0, due: 0, new: 0, reviewed: 0, weak: 0 };
 
 function escapeHTML(value) {
   const div = document.createElement("div");
@@ -174,13 +175,84 @@ function renderNotebook() {
     return;
   }
 
-  els.notebookList.innerHTML = notebook.slice(0, 30).map((item) => `
-    <article class="notebook-card">
-      <div class="notebook-title">${escapeHTML(item.grammar)} · ${escapeHTML(item.reviewState || "new")}</div>
+  els.notebookList.innerHTML = notebook.slice(0, 40).map((item) => `
+    <article class="notebook-card" data-id="${escapeHTML(item.id)}">
+      <div class="notebook-top">
+        <div class="notebook-title">${escapeHTML(item.grammar)} · ${escapeHTML(item.reviewState || "new")}</div>
+        <span class="badge">${escapeHTML(item.jlpt_level || "-")}</span>
+      </div>
       <div>${escapeHTML(truncate(item.sentence, 120))}</div>
       <div class="muted">${escapeHTML(item.matchedText || "")}</div>
+      <div class="muted">Reviews: ${Number(item.reviewCount || 0)} · Lapses: ${Number(item.lapseCount || 0)} · Next: ${escapeHTML(formatDue(item.nextReviewAt))}</div>
+      ${item.note ? `<div class="note">${escapeHTML(item.note)}</div>` : ""}
+      <div class="actions-row">
+        <button class="mini-btn" type="button" data-copy-item="${escapeHTML(item.id)}">Copy</button>
+        <button class="mini-btn" type="button" data-delete-item="${escapeHTML(item.id)}">Delete</button>
+      </div>
     </article>
   `).join("");
+}
+
+function formatDue(iso) {
+  if (!iso) return "now";
+  const delta = new Date(iso).getTime() - Date.now();
+  if (!Number.isFinite(delta) || delta <= 0) return "due";
+  const minutes = Math.ceil(delta / 60000);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.ceil(minutes / 60);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.ceil(hours / 24)}d`;
+}
+
+function getDueItems() {
+  const now = Date.now();
+  return notebook.filter((item) => !item.nextReviewAt || new Date(item.nextReviewAt).getTime() <= now);
+}
+
+function renderReview() {
+  els.reviewStats.innerHTML = `
+    <div class="stat-row">
+      <span>Total <strong>${stats.total}</strong></span>
+      <span>Due <strong>${stats.due}</strong></span>
+      <span>New <strong>${stats.new}</strong></span>
+      <span>Weak <strong>${stats.weak}</strong></span>
+    </div>
+  `;
+
+  const due = getDueItems();
+  if (!due.length) {
+    els.reviewCard.innerHTML = `<div class="empty">No cards due right now.</div>`;
+    return;
+  }
+
+  const item = due[0];
+  els.reviewCard.innerHTML = `
+    <article class="review-item" data-id="${escapeHTML(item.id)}">
+      <div class="topline">
+        <div>
+          <div class="label">Due now</div>
+          <div class="pattern">${escapeHTML(item.grammar)}</div>
+        </div>
+        <span class="badge">${escapeHTML(item.jlpt_level || "-")}</span>
+      </div>
+      <div class="sentence">${escapeHTML(item.sentence)}</div>
+      <div class="section">
+        <div class="label">Matched text</div>
+        <div class="code-line">${escapeHTML(item.matchedText || "-")}</div>
+      </div>
+      <div class="section">
+        <div class="label">Meaning</div>
+        <div>${escapeHTML(item.meaning_vi || "-")}</div>
+        ${item.meaning_en ? `<div class="muted">${escapeHTML(item.meaning_en)}</div>` : ""}
+      </div>
+      <div class="actions-row srs-row">
+        <button class="mini-btn danger" type="button" data-review="again">Again</button>
+        <button class="mini-btn warn" type="button" data-review="hard">Hard</button>
+        <button class="mini-btn good" type="button" data-review="good">Good</button>
+        <button class="mini-btn easy" type="button" data-review="easy">Easy</button>
+      </div>
+    </article>
+  `;
 }
 
 async function saveCurrentAnalysis() {
@@ -210,14 +282,31 @@ async function loadState() {
 
 async function loadNotebook() {
   notebook = await sendRuntimeMessage({ type: "GET_NOTEBOOK" });
+  stats = await sendRuntimeMessage({ type: "GET_NOTEBOOK_STATS" });
   renderNotebook();
+  renderReview();
+}
+
+async function reviewItem(id, rating) {
+  await sendRuntimeMessage({ type: "REVIEW_NOTEBOOK_ITEM", id, rating });
+  showStatus(`Reviewed: ${rating}`);
+  await loadNotebook();
+}
+
+async function deleteItem(id) {
+  await sendRuntimeMessage({ type: "DELETE_NOTEBOOK_ITEM", id });
+  showStatus("Deleted");
+  await loadNotebook();
 }
 
 async function init() {
   Object.assign(els, {
     detail: document.getElementById("detail"),
     notebookList: document.getElementById("notebook-list"),
+    reviewCard: document.getElementById("review-card"),
+    reviewStats: document.getElementById("review-stats"),
     refreshState: document.getElementById("refresh-state"),
+    reloadReview: document.getElementById("reload-review"),
     reloadNotebook: document.getElementById("reload-notebook"),
     status: document.getElementById("status")
   });
@@ -229,6 +318,37 @@ async function init() {
   els.reloadNotebook.addEventListener("click", async () => {
     await loadNotebook();
     showStatus("Notebook reloaded");
+  });
+  els.reloadReview.addEventListener("click", async () => {
+    await loadNotebook();
+    showStatus("Review queue reloaded");
+  });
+  els.reviewCard.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-review]");
+    if (!button) return;
+    const item = event.target.closest("[data-id]");
+    if (!item) return;
+    await reviewItem(item.dataset.id, button.dataset.review);
+  });
+  els.notebookList.addEventListener("click", async (event) => {
+    const copyButton = event.target.closest("[data-copy-item]");
+    const deleteButton = event.target.closest("[data-delete-item]");
+    if (copyButton) {
+      const item = notebook.find((entry) => entry.id === copyButton.dataset.copyItem);
+      if (!item) return;
+      await copyText([
+        "Grammar Sensei",
+        `Pattern: ${item.grammar}`,
+        `Sentence: ${item.sentence}`,
+        `Matched: ${item.matchedText}`,
+        `Meaning VI: ${item.meaning_vi}`,
+        `Structure: ${item.structure}`
+      ].join("\n"));
+      showStatus("Copied");
+    }
+    if (deleteButton) {
+      await deleteItem(deleteButton.dataset.deleteItem);
+    }
   });
 
   try {

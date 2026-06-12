@@ -13,6 +13,8 @@ The project is still plain JavaScript/HTML/CSS with no build step.
 - Scan the current visible page for Japanese sentences on demand.
 - Optional hover mode with a small tooltip, disabled by default.
 - Side Panel detail view with explanation, examples, confusions, copy, and notebook save.
+- Review Queue in the Side Panel with Again / Hard / Good / Easy ratings.
+- Lightweight local SRS metadata: due date, review count, lapse count, interval, ease factor.
 - Local grammar engine with 50 JLPT N5-N1 patterns.
 - Vietnamese-first grammar data with English kept as secondary context.
 - Basic kana-only romaji helper; kanji readings are not guessed.
@@ -59,6 +61,7 @@ GRAMMAR-SENSEI/
   core/
     normalize.js
     romaji.js
+    srs.js
     matcher.js
     ai-provider.js
   background.js
@@ -173,8 +176,10 @@ node --check background.js
 node --check content.js
 node --check popup.js
 node --check sidepanel.js
+node --check core/srs.js
 node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest ok')"
 node test-analyzer.js
+node test-srs.js
 ```
 
 ## Known Limitations
@@ -183,7 +188,8 @@ node test-analyzer.js
 - Romaji is basic kana-only; kanji readings are not guessed without a dictionary/tokenizer.
 - Semantic Vietnamese/English mode is keyword-based.
 - AI mode is only scaffolded in Phase 1 and is off by default.
-- OCR, subtitles, and SRS scheduling are not implemented yet.
+- SRS is intentionally lightweight and local-only, not a full FSRS implementation.
+- OCR and subtitles are not implemented yet.
 
 ## License
 
