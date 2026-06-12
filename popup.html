@@ -5,36 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Grammar Sensei</title>
   <style>
-    *, *::before, *::after {
-      box-sizing: border-box;
-    }
-
+    *, *::before, *::after { box-sizing: border-box; }
     body {
-      width: 380px;
-      min-height: 520px;
+      width: 410px;
+      min-height: 620px;
       margin: 0;
       background: #fffdf8;
       color: #292524;
       font-family: "Segoe UI", "Noto Sans JP", "Helvetica Neue", Arial, sans-serif;
       font-size: 13px;
       line-height: 1.5;
-      letter-spacing: 0;
     }
-
-    button, input {
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    .app {
-      min-height: 520px;
-      display: flex;
-      flex-direction: column;
-    }
-
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { min-height: 620px; display: flex; flex-direction: column; }
     .header {
       display: flex;
       align-items: center;
@@ -44,78 +28,37 @@
       background: #1c1917;
       color: #fafaf9;
     }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-    }
-
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .brand-mark {
-      display: inline-grid;
+      display: grid;
       place-items: center;
       width: 38px;
       height: 38px;
       border-radius: 8px;
       background: linear-gradient(135deg, #0f766e, #2563eb 58%, #e11d48);
       color: #fff;
-      font-weight: 850;
       font-size: 18px;
+      font-weight: 850;
     }
-
-    h1 {
-      margin: 0;
-      color: #fef3c7;
-      font-size: 16px;
-      line-height: 1.2;
-    }
-
-    .subtitle {
-      margin-top: 2px;
-      color: #d6d3d1;
-      font-size: 11.5px;
-    }
-
+    h1 { margin: 0; color: #fef3c7; font-size: 16px; line-height: 1.2; }
+    .subtitle { margin-top: 2px; color: #d6d3d1; font-size: 11.5px; }
     .status-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      flex-shrink: 0;
       min-height: 28px;
       padding: 4px 9px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255,255,255,.14);
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255,255,255,.08);
       color: #fafaf9;
       font-size: 11.5px;
       font-weight: 750;
     }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: #14b8a6;
-    }
-
-    .status-pill[data-enabled="false"] .status-dot {
-      background: #fb7185;
-    }
-
-    .content {
-      display: grid;
-      gap: 12px;
-      padding: 14px;
-    }
-
-    .panel {
-      border: 1px solid #e7e5e4;
-      border-radius: 8px;
-      background: #ffffff;
-      overflow: hidden;
-    }
-
+    .status-dot { width: 8px; height: 8px; border-radius: 999px; background: #14b8a6; }
+    .status-pill[data-enabled="false"] .status-dot { background: #fb7185; }
+    .content { display: grid; gap: 12px; padding: 14px; }
+    .panel { border: 1px solid #e7e5e4; border-radius: 8px; background: #fff; overflow: hidden; }
     .panel-header {
       display: flex;
       align-items: center;
@@ -125,106 +68,51 @@
       border-bottom: 1px solid #e7e5e4;
       background: #fafaf9;
     }
-
-    .panel-title {
-      margin: 0;
-      color: #1c1917;
-      font-size: 12px;
-      font-weight: 850;
-      text-transform: uppercase;
-    }
-
-    .panel-body {
-      padding: 12px;
-    }
-
-    .primary-action {
-      display: flex;
-      width: 100%;
+    .panel-title { margin: 0; color: #1c1917; font-size: 12px; font-weight: 850; text-transform: uppercase; }
+    .panel-body { padding: 12px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .primary-action, .secondary-action {
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      min-height: 42px;
-      border: 0;
+      min-height: 40px;
       border-radius: 8px;
-      background: #0f766e;
-      color: #fff;
       font-weight: 850;
+      width: 100%;
     }
-
-    .primary-action:hover {
-      background: #115e59;
-    }
-
-    .secondary-btn,
-    .text-btn,
-    .mini-btn {
+    .primary-action { border: 0; background: #0f766e; color: #fff; }
+    .primary-action:hover { background: #115e59; }
+    .secondary-action, .mini-btn, .text-btn {
       border: 1px solid #d6d3d1;
-      border-radius: 7px;
       background: #fff;
       color: #292524;
+    }
+    .secondary-action:hover, .mini-btn:hover, .text-btn:hover { background: #f5f5f4; }
+    .mini-btn, .text-btn {
+      min-height: 28px;
+      border-radius: 7px;
+      padding: 4px 8px;
+      font-size: 12px;
       font-weight: 750;
     }
-
-    .secondary-btn {
-      min-height: 34px;
-      padding: 6px 10px;
-    }
-
-    .text-btn {
-      min-height: 28px;
-      padding: 4px 8px;
-      color: #0f766e;
-      font-size: 12px;
-    }
-
-    .mini-btn {
-      min-height: 26px;
-      padding: 3px 7px;
-      font-size: 11.5px;
-    }
-
-    .secondary-btn:hover,
-    .text-btn:hover,
-    .mini-btn:hover {
-      background: #f5f5f4;
-    }
-
-    .hint {
-      margin: 8px 0 0;
-      color: #78716c;
-      font-size: 12px;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-
-    .stat {
-      padding: 10px 8px;
+    .text-btn { color: #0f766e; }
+    .hint { margin: 8px 0 0; color: #78716c; font-size: 12px; }
+    textarea {
+      width: 100%;
+      min-height: 86px;
+      resize: vertical;
+      border: 1px solid #d6d3d1;
       border-radius: 8px;
-      background: #f5f5f4;
-      text-align: center;
+      padding: 9px 10px;
+      color: #292524;
+      background: #fffdf8;
     }
-
-    .stat-value {
-      color: #0f766e;
-      font-size: 18px;
-      font-weight: 850;
-      line-height: 1.1;
-    }
-
-    .stat-label {
-      margin-top: 4px;
-      color: #78716c;
-      font-size: 10.5px;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .result {
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .stat { padding: 10px 8px; border-radius: 8px; background: #f5f5f4; text-align: center; }
+    .stat-value { color: #0f766e; font-size: 18px; font-weight: 850; line-height: 1.1; }
+    .stat-label { margin-top: 4px; color: #78716c; font-size: 10.5px; font-weight: 800; text-transform: uppercase; }
+    .result, .list-result {
       display: none;
       margin-top: 10px;
       padding: 11px;
@@ -232,25 +120,15 @@
       border-radius: 8px;
       background: #fafaf9;
     }
-
-    .result[data-visible="true"] {
-      display: block;
-    }
-
-    .result-top {
+    .result[data-visible="true"], .list-result[data-visible="true"] { display: block; }
+    .result-top, .history-main, .scan-main {
       display: flex;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 8px;
+      margin-bottom: 7px;
     }
-
-    .pattern {
-      color: #0f766e;
-      font-size: 18px;
-      font-weight: 850;
-      line-height: 1.2;
-    }
-
+    .pattern { color: #0f766e; font-size: 18px; font-weight: 850; line-height: 1.2; }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -262,64 +140,26 @@
       color: #1c1917;
       font-size: 11.5px;
       font-weight: 850;
+      padding: 0 8px;
     }
-
-    .result-text {
-      margin-bottom: 8px;
-      color: #57534e;
-      word-break: break-word;
-    }
-
-    .result-meta {
-      color: #44403c;
-      font-size: 12px;
-    }
-
+    .result-text, .history-text, .scan-text { color: #57534e; font-size: 12px; word-break: break-word; }
+    .result-meta { color: #44403c; font-size: 12px; }
+    .actions-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .setting-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto;
       align-items: center;
-      justify-content: space-between;
       gap: 12px;
       min-height: 42px;
       border-bottom: 1px solid #f0efed;
+      padding: 4px 0;
     }
-
-    .setting-row:last-child {
-      border-bottom: 0;
-    }
-
-    .setting-label {
-      color: #292524;
-      font-weight: 750;
-    }
-
-    .setting-help {
-      margin-top: 1px;
-      color: #78716c;
-      font-size: 11.5px;
-    }
-
-    .switch {
-      position: relative;
-      width: 42px;
-      height: 24px;
-      flex-shrink: 0;
-    }
-
-    .switch input {
-      position: absolute;
-      opacity: 0;
-      inset: 0;
-    }
-
-    .slider {
-      position: absolute;
-      inset: 0;
-      border-radius: 999px;
-      background: #d6d3d1;
-      transition: background 130ms ease;
-    }
-
+    .setting-row:last-child { border-bottom: 0; }
+    .setting-label { color: #292524; font-weight: 750; }
+    .setting-help { margin-top: 1px; color: #78716c; font-size: 11.5px; }
+    .switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+    .switch input { position: absolute; opacity: 0; inset: 0; }
+    .slider { position: absolute; inset: 0; border-radius: 999px; background: #d6d3d1; transition: background 130ms ease; }
     .slider::after {
       content: "";
       position: absolute;
@@ -329,26 +169,33 @@
       height: 18px;
       border-radius: 999px;
       background: #fff;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 1px 4px rgba(0,0,0,.2);
       transition: transform 130ms ease;
     }
-
-    .switch input:checked + .slider {
-      background: #0f766e;
+    .switch input:checked + .slider { background: #0f766e; }
+    .switch input:checked + .slider::after { transform: translateX(18px); }
+    .number-input, .select-input {
+      width: 88px;
+      min-height: 30px;
+      border: 1px solid #d6d3d1;
+      border-radius: 7px;
+      background: #fff;
+      color: #292524;
+      padding: 4px 7px;
     }
-
-    .switch input:checked + .slider::after {
-      transform: translateX(18px);
+    .select-input { width: 116px; }
+    .warning {
+      display: none;
+      margin-top: 8px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      background: #fff7ed;
+      color: #9a3412;
+      font-size: 12px;
     }
-
-    .history-list {
-      display: grid;
-      gap: 8px;
-      max-height: 210px;
-      overflow: auto;
-    }
-
-    .history-item {
+    .warning[data-visible="true"] { display: block; }
+    .history-list, .scan-list { display: grid; gap: 8px; max-height: 230px; overflow: auto; }
+    .history-item, .scan-item {
       display: grid;
       gap: 5px;
       padding: 9px;
@@ -356,53 +203,11 @@
       border-radius: 8px;
       background: #fff;
     }
-
-    .history-main {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .history-grammar {
-      color: #0f766e;
-      font-weight: 850;
-    }
-
-    .history-time {
-      color: #78716c;
-      font-size: 11px;
-      white-space: nowrap;
-    }
-
-    .history-text {
-      color: #57534e;
-      font-size: 12px;
-      word-break: break-word;
-    }
-
-    .empty {
-      padding: 14px 4px;
-      color: #78716c;
-      text-align: center;
-      font-size: 12px;
-    }
-
-    .toast {
-      min-height: 18px;
-      color: #0f766e;
-      font-size: 11.5px;
-      font-weight: 800;
-      text-align: right;
-    }
-
-    .footer {
-      margin-top: auto;
-      padding: 10px 14px 14px;
-      color: #78716c;
-      font-size: 11px;
-      text-align: center;
-    }
+    .history-grammar, .scan-grammar { color: #0f766e; font-weight: 850; }
+    .history-time { color: #78716c; font-size: 11px; white-space: nowrap; }
+    .empty { padding: 14px 4px; color: #78716c; text-align: center; font-size: 12px; }
+    .toast { min-height: 18px; color: #0f766e; font-size: 11.5px; font-weight: 800; text-align: right; }
+    .footer { margin-top: auto; padding: 10px 14px 14px; color: #78716c; font-size: 11px; text-align: center; }
   </style>
 </head>
 <body>
@@ -412,7 +217,7 @@
         <span class="brand-mark">文</span>
         <div>
           <h1>Grammar Sensei</h1>
-          <div class="subtitle">Japanese grammar on any page</div>
+          <div class="subtitle">Japanese grammar for Vietnamese learners</div>
         </div>
       </div>
       <div class="status-pill" id="status-pill" data-enabled="true">
@@ -424,28 +229,37 @@
     <section class="content">
       <div class="panel">
         <div class="panel-body">
-          <button class="primary-action" id="analyze-selection" type="button">
-            <span>文</span>
-            <span>Analyze Current Selection</span>
-          </button>
-          <p class="hint" id="selection-hint">Highlight Japanese text on the page, then use this button or the floating 文 button.</p>
+          <div class="grid-2">
+            <button class="primary-action" id="analyze-selection" type="button"><span>文</span><span>Analyze Selection</span></button>
+            <button class="secondary-action" id="scan-page" type="button">Scan Page</button>
+          </div>
+          <p class="hint" id="selection-hint">Highlight Japanese text, click 文, right-click, or analyze from here.</p>
           <div class="result" id="selection-result" data-visible="false"></div>
+          <div class="list-result" id="scan-result" data-visible="false">
+            <div class="scan-list" id="scan-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Manual Input</h2>
+          <button class="text-btn" id="clear-manual" type="button">Clear</button>
+        </div>
+        <div class="panel-body">
+          <textarea id="manual-input" placeholder="Paste Japanese / Vietnamese / English sentence"></textarea>
+          <div class="actions-row">
+            <button class="primary-action" id="analyze-input" type="button">Analyze Input</button>
+          </div>
+          <p class="hint">Japanese uses local grammar rules. Vietnamese/English uses local semantic mapping first.</p>
+          <div class="result" id="manual-result" data-visible="false"></div>
         </div>
       </div>
 
       <div class="stats-grid" aria-label="Extension stats">
-        <div class="stat">
-          <div class="stat-value" id="pattern-count">-</div>
-          <div class="stat-label">Patterns</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">N5-N1</div>
-          <div class="stat-label">JLPT</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value" id="history-count">0</div>
-          <div class="stat-label">Saved</div>
-        </div>
+        <div class="stat"><div class="stat-value" id="pattern-count">-</div><div class="stat-label">Patterns</div></div>
+        <div class="stat"><div class="stat-value">N5-N1</div><div class="stat-label">JLPT</div></div>
+        <div class="stat"><div class="stat-value" id="history-count">0</div><div class="stat-label">Saved</div></div>
       </div>
 
       <div class="panel">
@@ -455,64 +269,63 @@
         </div>
         <div class="panel-body" id="settings-list">
           <div class="setting-row">
-            <div>
-              <div class="setting-label">Enable Grammar Sensei</div>
-              <div class="setting-help">Selection tools and context menu responses</div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" data-setting="enabled" />
-              <span class="slider"></span>
-            </label>
+            <div><div class="setting-label">Enable Grammar Sensei</div><div class="setting-help">Selection tools and context menu responses</div></div>
+            <label class="switch"><input type="checkbox" data-setting="enabled" /><span class="slider"></span></label>
           </div>
           <div class="setting-row">
-            <div>
-              <div class="setting-label">Floating button</div>
-              <div class="setting-help">Show 文 after selecting Japanese text</div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" data-setting="floatingButton" />
-              <span class="slider"></span>
-            </label>
+            <div><div class="setting-label">Floating button</div><div class="setting-help">Show 文 after selecting Japanese text</div></div>
+            <label class="switch"><input type="checkbox" data-setting="floatingButton" /><span class="slider"></span></label>
           </div>
           <div class="setting-row">
-            <div>
-              <div class="setting-label">Auto analyze</div>
-              <div class="setting-help">Open the card immediately after selection</div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" data-setting="autoAnalyze" />
-              <span class="slider"></span>
-            </label>
+            <div><div class="setting-label">Auto analyze</div><div class="setting-help">Open the card immediately after selection</div></div>
+            <label class="switch"><input type="checkbox" data-setting="autoAnalyze" /><span class="slider"></span></label>
           </div>
           <div class="setting-row">
-            <div>
-              <div class="setting-label">Save history</div>
-              <div class="setting-help">Keep recent analyses on this device</div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" data-setting="saveHistory" />
-              <span class="slider"></span>
-            </label>
+            <div><div class="setting-label">Hover mode</div><div class="setting-help">Mini tooltip after hovering a Japanese sentence</div></div>
+            <label class="switch"><input type="checkbox" data-setting="hoverEnabled" /><span class="slider"></span></label>
           </div>
           <div class="setting-row">
-            <div>
-              <div class="setting-label">Compact cards</div>
-              <div class="setting-help">Use smaller analysis cards on pages</div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" data-setting="compactMode" />
-              <span class="slider"></span>
-            </label>
+            <div><div class="setting-label">Save history</div><div class="setting-help">Keep recent analyses on this device</div></div>
+            <label class="switch"><input type="checkbox" data-setting="saveHistory" /><span class="slider"></span></label>
           </div>
           <div class="setting-row">
-            <div>
-              <div class="setting-label">Match list</div>
-              <div class="setting-help">Show additional detected patterns</div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" data-setting="showMatchList" />
-              <span class="slider"></span>
-            </label>
+            <div><div class="setting-label">Compact cards</div><div class="setting-help">Use smaller analysis cards on pages</div></div>
+            <label class="switch"><input type="checkbox" data-setting="compactMode" /><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Match list</div><div class="setting-help">Show additional detected patterns</div></div>
+            <label class="switch"><input type="checkbox" data-setting="showMatchList" /><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Semantic mode</div><div class="setting-help">Suggest grammar for Vietnamese/English input</div></div>
+            <label class="switch"><input type="checkbox" data-setting="semanticMode" /><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Confidence threshold</div><div class="setting-help">Default: 70</div></div>
+            <input class="number-input" type="number" min="0" max="99" step="1" data-number-setting="confidenceThreshold" />
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Hover delay</div><div class="setting-help">Milliseconds, default: 400</div></div>
+            <input class="number-input" type="number" min="150" max="1500" step="50" data-number-setting="hoverDelayMs" />
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Scan limit</div><div class="setting-help">Max sentences per scan</div></div>
+            <input class="number-input" type="number" min="1" max="100" step="1" data-number-setting="scanLimit" />
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">AI mode</div><div class="setting-help">Off by default; Phase 1 uses safe stubs</div></div>
+            <select class="select-input" data-select-setting="aiMode">
+              <option value="off">Off</option>
+              <option value="browser">Browser</option>
+              <option value="cloud">Cloud</option>
+            </select>
+          </div>
+          <div class="warning" id="ai-warning" data-visible="false">
+            AI cloud mode may send the current sentence to a selected provider in a future phase. Phase 1 does not send text to cloud.
+          </div>
+          <div class="actions-row">
+            <button class="mini-btn" id="toggle-domain" type="button">Disable This Domain</button>
+            <button class="mini-btn" id="open-side-panel" type="button">Open Detail Panel</button>
           </div>
         </div>
       </div>
@@ -528,7 +341,7 @@
       </div>
     </section>
 
-    <footer class="footer">Grammar Sensei v1.0 - offline grammar detection</footer>
+    <footer class="footer">Local-first. AI off by default. Grammar Sensei v1.0</footer>
   </main>
 
   <script src="popup.js"></script>

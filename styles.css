@@ -216,6 +216,24 @@
   word-break: break-word;
 }
 
+.gs-example-ja {
+  color: #7c2d12;
+  font-weight: 800;
+}
+
+.gs-example-romaji,
+.gs-example-en,
+.gs-muted-line {
+  margin-top: 3px;
+  color: #78716c;
+  font-size: 12px;
+}
+
+.gs-example-vi {
+  margin-top: 3px;
+  color: #9a3412;
+}
+
 .gs-jlpt-badge {
   display: inline-flex;
   align-items: center;
@@ -353,6 +371,73 @@
 
 .gs-empty-copy {
   color: #57534e;
+}
+
+#gs-mini-tooltip {
+  position: absolute;
+  z-index: 2147483647;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  max-width: min(360px, calc(100vw - 24px));
+  min-height: 52px;
+  padding: 9px 10px;
+  border: 1px solid rgba(28, 25, 23, 0.16);
+  border-radius: 8px;
+  background: #1c1917;
+  color: #fafaf9;
+  font: 13px/1.35 "Segoe UI", "Noto Sans JP", "Helvetica Neue", Arial, sans-serif;
+  box-shadow: 0 16px 42px rgba(41, 37, 36, 0.22), 0 2px 10px rgba(41, 37, 36, 0.14);
+  animation: gs-slide-in 160ms ease-out;
+}
+
+.gs-mini-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0f766e, #2563eb 58%, #e11d48);
+  color: #fff;
+  font-weight: 850;
+}
+
+.gs-mini-main {
+  min-width: 0;
+}
+
+.gs-mini-pattern {
+  color: #fef3c7;
+  font-size: 14px;
+  font-weight: 850;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gs-mini-meta {
+  margin-top: 2px;
+  color: #d6d3d1;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gs-mini-more {
+  min-height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: 800 12px/1 "Segoe UI", Arial, sans-serif;
+  padding: 0 9px;
+  cursor: pointer;
+}
+
+.gs-mini-more:hover {
+  background: rgba(255, 255, 255, 0.16);
 }
 
 #gs-popup-card::-webkit-scrollbar {

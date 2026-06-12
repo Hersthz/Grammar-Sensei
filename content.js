@@ -1,8 +1,8 @@
 /**
- * Grammar Sensei - Content Script
+ * Grammar Sensei - content script
  *
- * Detects Japanese text selections, shows lightweight controls, and renders
- * grammar analysis results without requiring the user to leave the page.
+ * Handles selection, floating action, hover tooltip, page scan, and on-page
+ * result cards. Heavy analysis stays in the background service worker.
  */
 
 (() => {
@@ -14,17 +14,62 @@
     autoAnalyze: false,
     saveHistory: true,
     compactMode: false,
-    showMatchList: true
+    showMatchList: true,
+    hoverEnabled: false,
+    hoverDelayMs: 400,
+    scanLimit: 50,
+    confidenceThreshold: 70,
+    semanticMode: true,
+    aiMode: "off",
+    uiLanguage: "vi",
+    disabledDomains: []
   };
+
+  const SKIP_SELECTOR = [
+    "input",
+    "textarea",
+    "select",
+    "button",
+    "code",
+    "pre",
+    "script",
+    "style",
+    "nav",
+    "[contenteditable='true']",
+    "[role='button']",
+    "[aria-hidden='true']",
+    "#gs-floating-btn",
+    "#gs-popup-card",
+    "#gs-mini-tooltip"
+  ].join(",");
 
   let settings = { ...DEFAULT_SETTINGS };
   let floatingBtn = null;
   let popupCard = null;
+  let miniTooltip = null;
+  let hoverTimer = null;
   let autoAnalyzeTimer = null;
   let lastSelection = { text: "", x: 0, y: 0 };
+  let lastHoverSentence = "";
+  let lastHoverAnalysis = null;
 
   function containsJapanese(text) {
     return /[\u3040-\u30ff\u3400-\u9fff]/u.test(text || "");
+  }
+
+  function normalizeText(text) {
+    return String(text || "").normalize("NFKC").replace(/[ \t\r\n]+/g, " ").trim();
+  }
+
+  function normalizeForMatch(text) {
+    return normalizeText(text).replace(/\s+/g, "");
+  }
+
+  function splitJapaneseSentences(text) {
+    return normalizeText(text)
+      .split(/(?<=[。！？!?])\s+|(?<=[。！？!?])/u)
+      .map((sentence) => sentence.trim())
+      .filter((sentence) => sentence.length >= 2 && containsJapanese(sentence));
   }
 
   function escapeHTML(value) {
@@ -38,14 +83,35 @@
     return text.length > max ? `${text.slice(0, max)}...` : text;
   }
 
+  function currentDomainDisabled() {
+    const host = location.hostname;
+    return settings.disabledDomains.some((domain) => host === domain || host.endsWith(`.${domain}`));
+  }
+
+  function isPrivateInput(element) {
+    if (!element || element.tagName?.toLowerCase() !== "input") return false;
+    const type = String(element.type || "text").toLowerCase();
+    const name = String(element.name || element.id || "").toLowerCase();
+    return ["password", "email", "tel", "number", "credit-card"].includes(type) ||
+      /card|cc|payment|email|mail|phone|password|pass/.test(name);
+  }
+
   function isEditableElement(element) {
     if (!element) return false;
     const tag = element.tagName?.toLowerCase();
     return tag === "textarea" || tag === "input" || element.isContentEditable;
   }
 
+  function shouldSkipElement(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return true;
+    if (element.closest(SKIP_SELECTOR)) return true;
+    if (isPrivateInput(element)) return true;
+    return false;
+  }
+
   function getSelectedText() {
     const active = document.activeElement;
+    if (isPrivateInput(active)) return "";
     if (isEditableElement(active) && typeof active.selectionStart === "number") {
       return active.value.slice(active.selectionStart, active.selectionEnd).trim();
     }
@@ -74,30 +140,30 @@
   }
 
   function grammarSenseiContains(target) {
-    return Boolean(
-      target?.closest?.("#gs-floating-btn") ||
-      target?.closest?.("#gs-popup-card")
-    );
+    return Boolean(target?.closest?.("#gs-floating-btn, #gs-popup-card, #gs-mini-tooltip"));
   }
 
   function removeFloatingBtn() {
-    if (floatingBtn) {
-      floatingBtn.remove();
-      floatingBtn = null;
-    }
+    floatingBtn?.remove();
+    floatingBtn = null;
   }
 
   function removePopupCard() {
-    if (popupCard) {
-      popupCard.remove();
-      popupCard = null;
-    }
+    popupCard?.remove();
+    popupCard = null;
   }
 
-  function cleanup() {
+  function removeMiniTooltip() {
+    miniTooltip?.remove();
+    miniTooltip = null;
+  }
+
+  function cleanup({ keepTooltip = false } = {}) {
     window.clearTimeout(autoAnalyzeTimer);
+    window.clearTimeout(hoverTimer);
     removeFloatingBtn();
     removePopupCard();
+    if (!keepTooltip) removeMiniTooltip();
   }
 
   function clampPosition(left, top, width, height) {
@@ -106,7 +172,6 @@
     const minY = window.scrollY + margin;
     const maxX = window.scrollX + window.innerWidth - width - margin;
     const maxY = window.scrollY + window.innerHeight - height - margin;
-
     return {
       x: Math.max(minX, Math.min(left, maxX)),
       y: Math.max(minY, Math.min(top, maxY))
@@ -120,13 +185,11 @@
           reject(new Error(chrome.runtime.lastError.message));
           return;
         }
-
         if (!response?.success) {
           reject(new Error(response?.error || "Unknown extension error."));
           return;
         }
-
-        resolve(response);
+        resolve(response.data);
       });
     });
   }
@@ -135,17 +198,20 @@
     const primary = data.primary || data;
     const also = (data.matches || [])
       .slice(1)
-      .map((match) => `${match.grammar} (${match.jlpt_level})`)
+      .map((match) => `${match.display || match.grammar} (${match.jlpt_level})`)
       .join(", ");
 
     return [
       "Grammar Sensei",
       `Text: ${selectedText}`,
-      `Pattern: ${primary.grammar || "Not detected"}`,
+      `Pattern: ${primary.display || primary.grammar || "Not detected"}`,
       `JLPT: ${primary.jlpt_level || "-"}`,
-      `Meaning: ${primary.meaning || "-"}`,
+      `Matched: ${primary.matchedText || primary.detected || "-"}`,
+      `Meaning VI: ${primary.meaning_vi || primary.meaning || "-"}`,
+      `Meaning EN: ${primary.meaning_en || "-"}`,
       `Structure: ${primary.structure || "-"}`,
-      `Example: ${primary.example || "-"}`,
+      `Example: ${primary.example?.ja || primary.example || "-"}`,
+      primary.example?.vi ? `Example VI: ${primary.example.vi}` : "",
       also ? `Also detected: ${also}` : ""
     ].filter(Boolean).join("\n");
   }
@@ -155,9 +221,7 @@
       try {
         await navigator.clipboard.writeText(text);
         return true;
-      } catch (_error) {
-        // Fall through to the textarea fallback for restricted pages.
-      }
+      } catch (_error) {}
     }
 
     const textarea = document.createElement("textarea");
@@ -165,7 +229,6 @@
     textarea.setAttribute("readonly", "");
     textarea.style.position = "fixed";
     textarea.style.left = "-9999px";
-    textarea.style.top = "0";
     document.body.appendChild(textarea);
     textarea.select();
     const ok = document.execCommand("copy");
@@ -176,7 +239,6 @@
   function setCardStatus(card, message, tone = "neutral") {
     const status = card.querySelector(".gs-card-status");
     if (!status) return;
-
     status.textContent = message;
     status.dataset.tone = tone;
     window.setTimeout(() => {
@@ -186,7 +248,7 @@
 
   function showFloatingButton(x, y) {
     removeFloatingBtn();
-    if (!settings.enabled || !settings.floatingButton) return;
+    if (!settings.enabled || !settings.floatingButton || currentDomainDisabled()) return;
 
     const btn = document.createElement("button");
     btn.id = "gs-floating-btn";
@@ -207,24 +269,28 @@
     floatingBtn = btn;
   }
 
-  function positionCard(card, x, y) {
-    document.body.appendChild(card);
-    const rect = card.getBoundingClientRect();
+  function positionFloatingElement(element, x, y) {
+    document.body.appendChild(element);
+    const rect = element.getBoundingClientRect();
     const pos = clampPosition(x + 12, y + 10, rect.width, rect.height);
-    card.style.left = `${pos.x}px`;
-    card.style.top = `${pos.y}px`;
+    element.style.left = `${pos.x}px`;
+    element.style.top = `${pos.y}px`;
+  }
+
+  function renderTags(tags) {
+    if (!tags?.length) return "";
+    return `<div class="gs-tag-row">${tags.slice(0, 5).map((tag) => `<span class="gs-tag">${escapeHTML(tag)}</span>`).join("")}</div>`;
   }
 
   function renderMatchList(matches) {
     if (!settings.showMatchList || !matches || matches.length <= 1) return "";
-
     return `
-      <section class="gs-section gs-match-list" aria-label="Detected grammar patterns">
-        <div class="gs-section-label">Also Detected</div>
+      <section class="gs-section gs-match-list">
+        <div class="gs-section-label">Cũng phát hiện</div>
         <div class="gs-match-grid">
-          ${matches.slice(1, 7).map((match) => `
+          ${matches.slice(1, 8).map((match) => `
             <div class="gs-match-pill">
-              <span>${escapeHTML(match.grammar)}</span>
+              <span>${escapeHTML(match.display || match.grammar)}</span>
               <small>${escapeHTML(match.jlpt_level)}</small>
             </div>
           `).join("")}
@@ -236,10 +302,9 @@
   function renderSuggestions(data) {
     const suggestions = data.suggestions || [];
     if (!suggestions.length) return "";
-
     return `
       <section class="gs-section">
-        <div class="gs-section-label">Try This</div>
+        <div class="gs-section-label">Gợi ý</div>
         <ul class="gs-suggestion-list">
           ${suggestions.map((item) => `<li>${escapeHTML(item)}</li>`).join("")}
         </ul>
@@ -247,11 +312,16 @@
     `;
   }
 
-  function renderTags(tags) {
-    if (!tags?.length) return "";
+  function renderExample(primary) {
+    const example = primary.example;
+    if (!example) return `<div class="gs-example">-</div>`;
+    if (typeof example === "string") return `<div class="gs-example">${escapeHTML(example)}</div>`;
     return `
-      <div class="gs-tag-row">
-        ${tags.slice(0, 5).map((tag) => `<span class="gs-tag">${escapeHTML(tag)}</span>`).join("")}
+      <div class="gs-example">
+        <div class="gs-example-ja">${escapeHTML(example.ja || "-")}</div>
+        <div class="gs-example-romaji">${escapeHTML(example.romaji || "")}</div>
+        <div class="gs-example-vi">${escapeHTML(example.vi || "")}</div>
+        ${example.en ? `<div class="gs-example-en">${escapeHTML(example.en)}</div>` : ""}
       </div>
     `;
   }
@@ -274,11 +344,11 @@
       </div>
       <div class="gs-loading">
         <div class="gs-spinner" aria-hidden="true"></div>
-        <div class="gs-loading-text">Analyzing grammar...</div>
+        <div class="gs-loading-text">Đang phân tích...</div>
       </div>
     `;
 
-    positionCard(card, x, y);
+    positionFloatingElement(card, x, y);
     card.querySelector(".gs-card-close").addEventListener("click", cleanup);
     popupCard = card;
   }
@@ -300,48 +370,49 @@
       </div>
       <div class="gs-card-body">
         <div class="gs-empty-state">
-          <div class="gs-empty-title">Could not analyze this selection</div>
+          <div class="gs-empty-title">Không phân tích được selection này</div>
           <div class="gs-empty-copy">${escapeHTML(message)}</div>
         </div>
       </div>
     `;
 
-    positionCard(card, x, y);
+    positionFloatingElement(card, x, y);
     card.querySelector(".gs-card-close").addEventListener("click", cleanup);
     popupCard = card;
   }
 
   function showPopupCard(x, y, selectedText, data) {
     removePopupCard();
+    removeMiniTooltip();
 
     const primary = data.primary || {
       grammar: data.grammar,
-      meaning: data.meaning,
+      display: data.grammar,
+      meaning_vi: data.meaning,
       structure: data.structure,
       example: data.example,
       jlpt_level: data.jlpt_level,
       confidence: data.confidence,
       tags: data.tags || []
     };
-
     const hasResult = Boolean(data.primary);
     const matches = data.matches || [];
+    const confidence = Number(primary.confidence || 0);
+
     const card = document.createElement("div");
     card.id = "gs-popup-card";
     card.className = settings.compactMode ? "gs-compact" : "";
     card.setAttribute("role", "dialog");
     card.setAttribute("aria-label", "Grammar Sensei analysis");
-
     card.innerHTML = `
       <div class="gs-card-header">
         <div>
           <div class="gs-card-title">Grammar Sensei</div>
-          <div class="gs-card-subtitle">
-            ${hasResult ? `${matches.length} match${matches.length === 1 ? "" : "es"} found` : "No exact match"}
-          </div>
+          <div class="gs-card-subtitle">${hasResult ? `${matches.length} mẫu được phát hiện` : "Chưa có match chắc chắn"}</div>
         </div>
         <div class="gs-card-actions">
-          <button class="gs-icon-btn gs-copy-btn" type="button" title="Copy summary" aria-label="Copy summary">Copy</button>
+          <button class="gs-icon-btn gs-copy-btn" type="button" title="Copy summary">Copy</button>
+          <button class="gs-icon-btn gs-detail-btn" type="button" title="More detail">Detail</button>
           <button class="gs-icon-btn gs-card-close" type="button" title="Close" aria-label="Close">&times;</button>
         </div>
       </div>
@@ -352,39 +423,47 @@
         <section class="gs-primary-panel ${hasResult ? "" : "gs-no-result"}">
           <div class="gs-primary-topline">
             <div>
-              <div class="gs-section-label">Grammar Pattern</div>
-              <div class="gs-pattern">${escapeHTML(primary.grammar || "Not detected")}</div>
+              <div class="gs-section-label">Mẫu ngữ pháp</div>
+              <div class="gs-pattern">${escapeHTML(primary.display || primary.grammar || "Not detected")}</div>
             </div>
             <span class="gs-jlpt-badge gs-jlpt-${escapeHTML(primary.jlpt_level || "none")}">${escapeHTML(primary.jlpt_level || "-")}</span>
           </div>
 
           <div class="gs-confidence-wrap" ${hasResult ? "" : "hidden"}>
-            <div class="gs-confidence-bar" style="--gs-confidence:${Number(primary.confidence || 0)}%;"></div>
-            <span>${Number(primary.confidence || 0)}%</span>
+            <div class="gs-confidence-bar" style="--gs-confidence:${confidence}%;"></div>
+            <span>${confidence}%</span>
           </div>
 
           ${renderTags(primary.tags)}
         </section>
 
+        ${data.romaji ? `
+          <section class="gs-section">
+            <div class="gs-section-label">Romaji</div>
+            <div class="gs-code-line">${escapeHTML(data.romaji)}</div>
+          </section>
+        ` : ""}
+
         <section class="gs-section">
-          <div class="gs-section-label">Meaning</div>
-          <div class="gs-section-content">${escapeHTML(primary.meaning || data.meaning || "-")}</div>
+          <div class="gs-section-label">Nghĩa</div>
+          <div class="gs-section-content">${escapeHTML(primary.meaning_vi || data.meaning || "-")}</div>
+          ${primary.meaning_en ? `<div class="gs-muted-line">${escapeHTML(primary.meaning_en)}</div>` : ""}
         </section>
 
         <section class="gs-section">
-          <div class="gs-section-label">Structure</div>
+          <div class="gs-section-label">Cấu trúc</div>
           <div class="gs-code-line">${escapeHTML(primary.structure || "-")}</div>
         </section>
 
         <section class="gs-section">
-          <div class="gs-section-label">Example</div>
-          <div class="gs-example">${escapeHTML(primary.example || "-")}</div>
+          <div class="gs-section-label">Ví dụ</div>
+          ${renderExample(primary)}
         </section>
 
-        ${primary.nuance ? `
+        ${primary.nuance_vi || primary.nuance ? `
           <section class="gs-section">
             <div class="gs-section-label">Sensei Note</div>
-            <div class="gs-section-content">${escapeHTML(primary.nuance)}</div>
+            <div class="gs-section-content">${escapeHTML(primary.nuance_vi || primary.nuance)}</div>
           </section>
         ` : ""}
 
@@ -392,13 +471,13 @@
         ${renderSuggestions(data)}
 
         <div class="gs-card-footer">
-          <span>${settings.saveHistory && hasResult ? "Saved to history" : "History off or no result"}</span>
+          <span>${settings.saveHistory && hasResult ? "Đã lưu vào history" : "Local-only"}</span>
           <span class="gs-card-status" aria-live="polite"></span>
         </div>
       </div>
     `;
 
-    positionCard(card, x, y);
+    positionFloatingElement(card, x, y);
 
     card.querySelector(".gs-card-close").addEventListener("click", (event) => {
       event.stopPropagation();
@@ -411,31 +490,81 @@
       setCardStatus(card, ok ? "Copied" : "Copy failed", ok ? "success" : "danger");
     });
 
+    card.querySelector(".gs-detail-btn").addEventListener("click", async (event) => {
+      event.stopPropagation();
+      await openDetail(data, "card");
+      setCardStatus(card, "Detail opened", "success");
+    });
+
     popupCard = card;
   }
 
-  async function handleAnalyze(selectedText, x, y, source = "selection") {
+  function showMiniTooltip(x, y, sentence, analysis) {
+    removeMiniTooltip();
+    if (!analysis?.primary) return;
+
+    const primary = analysis.primary;
+    const tooltip = document.createElement("div");
+    tooltip.id = "gs-mini-tooltip";
+    tooltip.setAttribute("role", "status");
+    tooltip.innerHTML = `
+      <div class="gs-mini-mark">文</div>
+      <div class="gs-mini-main">
+        <div class="gs-mini-pattern">${escapeHTML(primary.display || primary.grammar)}</div>
+        <div class="gs-mini-meta">${escapeHTML(primary.jlpt_level)} · ${escapeHTML(primary.meaning_vi || primary.meaning || "")}</div>
+      </div>
+      <button class="gs-mini-more" type="button">More</button>
+    `;
+
+    tooltip.querySelector(".gs-mini-more").addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      lastSelection = { text: sentence, x, y };
+      showPopupCard(x, y, sentence, analysis);
+    });
+
+    positionFloatingElement(tooltip, x, y);
+    miniTooltip = tooltip;
+  }
+
+  async function openDetail(analysis, source = "selection") {
+    await sendRuntimeMessage({
+      type: "OPEN_SIDE_PANEL",
+      data: {
+        analysis,
+        source,
+        pageUrl: location.href,
+        pageTitle: document.title
+      }
+    });
+  }
+
+  async function handleAnalyze(selectedText, x, y, source = "selection", options = {}) {
     const text = String(selectedText || getSelectedText()).trim();
-    if (!settings.enabled || !text || !containsJapanese(text)) {
+    if (!settings.enabled || currentDomainDisabled() || !text || !containsJapanese(text)) {
       cleanup();
-      return;
+      return null;
     }
 
     lastSelection = { text, x, y };
     removeFloatingBtn();
-    showLoadingCard(x, y, text);
+    if (!options.silent) showLoadingCard(x, y, text);
 
     try {
-      const response = await sendRuntimeMessage({
+      const analysis = await sendRuntimeMessage({
         type: "ANALYZE_GRAMMAR",
         text,
         source,
-        saveHistory: settings.saveHistory
+        saveHistory: options.saveHistory ?? settings.saveHistory,
+        pageUrl: location.href,
+        pageTitle: document.title
       });
-      showPopupCard(x, y, text, response.data);
+      if (!options.silent) showPopupCard(x, y, text, analysis);
+      return analysis;
     } catch (error) {
       console.error("Grammar Sensei:", error);
-      showErrorCard(x, y, text, error.message);
+      if (!options.silent) showErrorCard(x, y, text, error.message);
+      return null;
     }
   }
 
@@ -446,10 +575,92 @@
     }, 260);
   }
 
+  function getSentenceNearPoint(clientX, clientY) {
+    const element = document.elementFromPoint(clientX, clientY);
+    if (!element || shouldSkipElement(element)) return "";
+
+    const text = normalizeText(element.innerText || element.textContent || "");
+    if (!containsJapanese(text) || text.length > 2500) return "";
+
+    const sentences = splitJapaneseSentences(text);
+    return sentences.find((sentence) => sentence.length >= 4) || "";
+  }
+
+  function handleHoverMove(event) {
+    if (!settings.enabled || !settings.hoverEnabled || currentDomainDisabled()) return;
+    if (grammarSenseiContains(event.target)) return;
+
+    window.clearTimeout(hoverTimer);
+    const point = { clientX: event.clientX, clientY: event.clientY, x: event.pageX, y: event.pageY };
+    hoverTimer = window.setTimeout(async () => {
+      const sentence = getSentenceNearPoint(point.clientX, point.clientY);
+      const key = normalizeForMatch(sentence);
+      if (!sentence || key === lastHoverSentence) return;
+      lastHoverSentence = key;
+
+      const analysis = await handleAnalyze(sentence, point.x, point.y, "hover", { silent: true, saveHistory: false });
+      lastHoverAnalysis = analysis;
+      if (analysis?.primary) showMiniTooltip(point.x, point.y, sentence, analysis);
+    }, settings.hoverDelayMs);
+  }
+
+  function isVisibleElement(element) {
+    if (!element || shouldSkipElement(element)) return false;
+    const style = window.getComputedStyle(element);
+    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return false;
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.top <= window.innerHeight;
+  }
+
+  function collectVisibleJapaneseSentences(limit) {
+    const sentences = [];
+    const seen = new Set();
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        if (!parent || !isVisibleElement(parent)) return NodeFilter.FILTER_REJECT;
+        const text = normalizeText(node.nodeValue);
+        if (!containsJapanese(text) || text.length < 2) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+
+    let node = walker.nextNode();
+    while (node && sentences.length < limit) {
+      for (const sentence of splitJapaneseSentences(node.nodeValue)) {
+        const key = normalizeForMatch(sentence);
+        if (key.length < 3 || seen.has(key)) continue;
+        seen.add(key);
+        sentences.push(sentence);
+        if (sentences.length >= limit) break;
+      }
+      node = walker.nextNode();
+    }
+
+    return sentences;
+  }
+
+  async function scanPageText() {
+    const limit = Math.max(1, Math.min(Number(settings.scanLimit || 50), 100));
+    const sentences = collectVisibleJapaneseSentences(limit);
+    if (!sentences.length) {
+      return { sentences: [], results: [], pageUrl: location.href, pageTitle: document.title };
+    }
+
+    const results = await sendRuntimeMessage({
+      type: "ANALYZE_BATCH",
+      sentences,
+      source: "scan",
+      limit
+    });
+
+    return { sentences, results, pageUrl: location.href, pageTitle: document.title };
+  }
+
   function loadSettings() {
     chrome.storage.sync.get(DEFAULT_SETTINGS, (items) => {
       settings = { ...DEFAULT_SETTINGS, ...items };
-      if (!settings.enabled) cleanup();
+      if (!settings.enabled || currentDomainDisabled()) cleanup();
     });
   }
 
@@ -460,13 +671,13 @@
         settings[key] = change.newValue;
       }
     }
-    if (!settings.enabled) cleanup();
+    if (!settings.enabled || currentDomainDisabled()) cleanup();
   });
 
   chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     if (request?.type === "GET_CURRENT_SELECTION") {
       const text = getSelectedText();
-      sendResponse({ success: true, text, hasJapanese: containsJapanese(text) });
+      sendResponse({ success: true, data: { text, hasJapanese: containsJapanese(text) } });
       return false;
     }
 
@@ -476,16 +687,36 @@
       const y = lastSelection.y || point.y;
       lastSelection = { text: request.text || "", x, y };
       removeFloatingBtn();
-      showPopupCard(x, y, request.text || "", request.data);
-      sendResponse({ success: true });
+      showPopupCard(x, y, request.text || request.data?.input || "", request.data);
+      sendResponse({ success: true, data: true });
       return false;
+    }
+
+    if (request?.type === "SHOW_MINI_TOOLTIP") {
+      showMiniTooltip(request.x || window.scrollX + 40, request.y || window.scrollY + 40, request.text || "", request.data);
+      sendResponse({ success: true, data: true });
+      return false;
+    }
+
+    if (request?.type === "OPEN_DETAIL_CARD") {
+      openDetail(request.data, request.source || "message")
+        .then((data) => sendResponse({ success: true, data }))
+        .catch((error) => sendResponse({ success: false, error: error.message }));
+      return true;
+    }
+
+    if (request?.type === "SCAN_PAGE_TEXT") {
+      scanPageText()
+        .then((data) => sendResponse({ success: true, data }))
+        .catch((error) => sendResponse({ success: false, error: error.message }));
+      return true;
     }
 
     return false;
   });
 
   document.addEventListener("mouseup", (event) => {
-    if (grammarSenseiContains(event.target) || !settings.enabled) return;
+    if (grammarSenseiContains(event.target) || !settings.enabled || currentDomainDisabled()) return;
 
     window.setTimeout(() => {
       const text = getSelectedText();
@@ -511,11 +742,16 @@
     cleanup();
   });
 
+  document.addEventListener("mousemove", handleHoverMove, { passive: true });
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") cleanup();
   });
 
-  window.addEventListener("scroll", removeFloatingBtn, { passive: true });
+  window.addEventListener("scroll", () => {
+    removeFloatingBtn();
+    removeMiniTooltip();
+  }, { passive: true });
 
   loadSettings();
 })();

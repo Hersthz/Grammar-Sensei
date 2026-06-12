@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grammar Sensei Detail</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+  <main class="sidepanel">
+    <header class="side-header">
+      <div class="brand">
+        <span class="brand-mark">文</span>
+        <div>
+          <h1>Grammar Sensei</h1>
+          <p>Detail View</p>
+        </div>
+      </div>
+      <button class="icon-btn" id="refresh-state" type="button" title="Refresh">Refresh</button>
+    </header>
+
+    <section class="status" id="status" aria-live="polite"></section>
+
+    <section class="detail" id="detail">
+      <div class="empty">
+        Analyze Japanese text from a page or popup to see details here.
+      </div>
+    </section>
+
+    <section class="notebook">
+      <div class="section-head">
+        <h2>Saved Grammar</h2>
+        <button class="text-btn" id="reload-notebook" type="button">Reload</button>
+      </div>
+      <div class="notebook-list" id="notebook-list"></div>
+    </section>
+  </main>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

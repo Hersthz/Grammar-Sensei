@@ -6,6 +6,7 @@
   "permissions": [
     "activeTab",
     "contextMenus",
+    "sidePanel",
     "storage"
   ],
   "host_permissions": [
@@ -33,5 +34,8 @@
       "16": "icons/icon16.png",
       "48": "icons/icon48.png"
     }
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
   }
 }
