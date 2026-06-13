@@ -1,19 +1,20 @@
-# Grammar Sensei Privacy Policy Draft
+# Grammar Sensei Privacy Policy
 
-Effective date: 2026-06-12
+Effective date: 2026-06-13
 
-Grammar Sensei is a Chrome extension for learning Japanese grammar. It analyzes selected Japanese text, manual input, and user-triggered page scans to show grammar explanations, JLPT levels, examples, and saved review items.
+Grammar Sensei is a Chrome extension for learning Japanese grammar. It analyzes selected Japanese text, manual input, and user-triggered page scans to show grammar explanations, JLPT levels, in-sentence highlights, examples, and saved review items.
 
 ## Local-First Default
 
-Grammar Sensei is local-first by default.
+Grammar Sensei is local-first by default. All core features — grammar detection, in-sentence highlighting, text-to-speech playback, notebook, and spaced-repetition review — run entirely inside your browser with no network requests.
 
-- Local grammar matching runs inside the Chrome extension.
+- Grammar matching runs inside the Chrome extension using an on-device pattern database.
+- In-sentence highlight and TTS use browser built-in APIs (no external service).
 - Hover mode is disabled by default.
-- Page scanning happens only when the user clicks Scan Page.
-- Keyboard page scanning happens only when the user presses Alt+Shift+G.
-- Shift scan only analyzes the sentence under the cursor while the user is holding Shift.
+- Page scanning happens only when the user clicks Scan Page or presses Alt+Shift+G.
+- Shift scan analyzes only the sentence under the cursor while the user holds Shift.
 - Cloud AI is off by default.
+- On-device Gemini Nano (where available) runs on your machine and sends nothing over the network.
 
 ## Data Processed Locally
 
@@ -25,73 +26,82 @@ The extension may process:
 - visible Japanese sentences collected only when the user presses Alt+Shift+G;
 - the Japanese sentence under the cursor while the user holds Shift;
 - grammar analysis results;
-- saved notebook items;
-- review/SRS metadata;
+- saved notebook items and Pro entitlement status;
+- spaced-repetition (SRS) metadata;
 - extension settings and disabled domains.
 
-This data is stored locally in Chrome storage on the user's device unless the user explicitly exports it or enables optional cloud AI.
+This data is stored locally in Chrome storage on the user's device. It is never transmitted to any third party unless the user explicitly enables optional Cloud AI (see below).
 
 ## Optional Cloud AI
 
-Cloud AI runs only when all of the following are true:
+Cloud AI is off by default and runs only when all of the following are true:
 
-- AI mode is set to Cloud;
+- AI mode is set to Cloud in Options;
 - the user accepts the AI privacy consent;
-- a backend endpoint is configured;
+- a backend endpoint URL is configured by the user;
 - the user clicks Ask AI.
 
 When Cloud AI is used, Grammar Sensei sends only:
 
 - the current sentence being analyzed;
-- compact local grammar analysis;
+- compact local grammar analysis result;
 - grammar database version;
 - allowed grammar IDs and grammar candidates;
 - UI language and strict-mode setting.
 
-Grammar Sensei does not send full page text, page URL, page title, cookies, passwords, payment data, or browsing history.
+Grammar Sensei does not send full page text, page URL, page title, cookies, passwords, payment data, or browsing history to any server.
 
-The extension does not contain AI provider API keys. Cloud AI must be handled through a backend proxy controlled by the publisher.
+The extension does not contain AI provider API keys. Cloud AI must be handled through a backend proxy configured and controlled by the user.
+
+## Pro Entitlement
+
+Pro status is stored locally in Chrome storage. No purchase data, payment card information, or personal identifiers are processed by the extension itself. Payment is handled externally by a third-party payment provider (ExtensionPay / Stripe); Grammar Sensei only receives a boolean paid status written to local storage by that provider.
 
 ## Data Not Collected
 
 Grammar Sensei does not collect:
 
-- passwords;
-- payment information;
-- email field contents;
-- cookies;
-- browsing history;
-- full webpage content by default;
-- analytics identifiers;
-- advertising identifiers.
+- passwords or form field contents;
+- payment or financial information;
+- cookies or session tokens;
+- browsing history or visited URLs;
+- full webpage content (only user-selected or user-triggered text is processed);
+- analytics or advertising identifiers;
+- device identifiers or fingerprints.
 
 ## Permissions
 
-Grammar Sensei uses Chrome permissions only for its learning features:
+Grammar Sensei requests Chrome permissions only for its learning features:
 
-- `activeTab`: read the current selection when the user interacts with the popup.
-- `contextMenus`: add "Analyze Japanese grammar" to selected text.
-- `storage`: save settings, history, notebook, and review metadata locally.
-- `sidePanel`: show detailed grammar explanations and review tools.
-- `<all_urls>` host access: inject the content script so the user can analyze selected Japanese text on webpages.
+- `activeTab`: read the current selection when the user interacts with the popup or context menu.
+- `contextMenus`: add "Analyze Japanese grammar" to the right-click menu for selected text.
+- `storage`: save settings, history, notebook, Pro status, and SRS metadata locally on the user's device.
+- `sidePanel`: display detailed grammar explanations, examples, notebook, and review tools.
+- Content script (`<all_urls>` match): inject the floating 文 button, on-page result cards, in-sentence highlights, and user-triggered scan panel into webpages. This is a content script declaration — not a host permission — so the extension does not make cross-origin network requests to those sites. All processing is local.
+- `optional_host_permissions` (runtime only): when the user enables Cloud AI and saves a backend endpoint, the extension requests access to that specific origin only. This is never triggered by default features.
 
 ## Data Retention
 
-History and notebook data remain on the user's device until the user clears them from the extension UI or uninstalls the extension.
+History and notebook data remain on the user's device until the user clears them from the Options page or uninstalls the extension. Exporting and deleting data is available at any time from Options → Data Management.
 
 ## User Controls
 
 Users can:
 
 - disable the extension globally;
-- disable specific domains;
-- turn hover mode on or off;
-- clear history;
-- clear notebook data;
-- export local data to JSON;
-- import a local JSON backup;
-- keep AI mode off.
+- disable the extension on specific domains;
+- enable or disable hover mode;
+- clear analysis history;
+- clear notebook and review data;
+- export all local data to JSON;
+- import a previously exported JSON backup;
+- keep AI mode off (default);
+- export notebook to Anki or CSV (Pro).
+
+## Changes to This Policy
+
+If this policy changes materially, the effective date above will be updated. Continued use of the extension after a policy update constitutes acceptance of the new terms.
 
 ## Contact
 
-Publisher contact: add your support email or website before publishing.
+For privacy questions or data requests, contact: tamhoang2022005@gmail.com

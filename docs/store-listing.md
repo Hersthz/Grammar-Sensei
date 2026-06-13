@@ -10,17 +10,19 @@ Grammar Sensei
 
 ## Short Description
 
-Analyze Japanese grammar from selected text, manual input, and page scans with Vietnamese-first explanations.
+Detect Japanese grammar from selected text, manual input, and page scans — with Vietnamese-first explanations and in-sentence highlighting.
 
 ## Detailed Description
 
 Grammar Sensei helps Japanese learners understand grammar patterns while reading the web.
 
-Highlight Japanese text, click the floating 文 button, or use the right-click menu to detect grammar patterns such as 〜たことがある, 〜ている, 〜なければならない, 〜ようになる, and more. The extension shows JLPT level, matched text, Vietnamese-first meaning, structure, examples, romaji, related patterns, and possible confusions.
+Highlight Japanese text, click the floating 文 button, or use the right-click menu to detect grammar patterns such as 〜たことがある, 〜ている, 〜なければならない, 〜ようになる, and more. The extension shows the JLPT level, highlights the exact grammar point inside your sentence, gives Vietnamese-first meaning, structure, conjugation examples, romaji, related patterns, and possible confusions.
 
 Key features:
 
-- Local grammar detection with 220+ JLPT N5-N1 patterns.
+- Local grammar detection with 286 JLPT N5–N1 patterns — runs on your device, no server.
+- In-sentence highlight — color-coded by JLPT level so you see exactly which part triggered the rule.
+- Listen (TTS) — hear any Japanese sentence spoken aloud with one click using the browser's built-in voice.
 - Vietnamese-first explanations with English as secondary context.
 - Floating 文 button for selected Japanese text.
 - Right-click context menu analysis.
@@ -28,14 +30,22 @@ Key features:
 - Alt+Shift+G on-page scan panel for visible Japanese sentences.
 - Shift-hover quick scan for the sentence under the cursor.
 - Optional hover tooltip, disabled by default.
-- Side Panel detail view with examples and confusions.
-- Local notebook and lightweight review queue.
-- Export/import for local data.
-- Optional Cloud AI connector through your configured backend only.
+- Side Panel detail view with examples, confusions, and review queue.
+- Local notebook and lightweight spaced-repetition review (SRS).
+- Export/import local data as JSON.
+- Optional Cloud AI connector through your own configured backend only.
+- On-device Gemini Nano AI fallback (where available) — runs locally, sends nothing over the network.
+
+Pro features ($10 one-time):
+
+- Export notebook to Anki (.txt) and CSV (Excel-compatible) for use in flashcard apps.
+- Unlimited page scan (Free tier: up to 15 sentences per scan).
+- Notebook sync across devices (coming soon).
+- Advanced study stats (coming soon).
 
 Privacy:
 
-Grammar Sensei is local-first by default. Cloud AI is off unless the user configures a backend endpoint, accepts the AI privacy notice, and clicks Ask AI. The extension does not include provider API keys and does not send full page text, page URL, page title, cookies, passwords, or payment data.
+Grammar Sensei is local-first by default. Grammar analysis, highlight, TTS, and notebook all run inside your browser with no network calls. Cloud AI is off unless you configure your own backend endpoint, accept the AI privacy notice, and click Ask AI. The extension does not include provider API keys and does not send full page text, page URL, page title, cookies, passwords, or payment data.
 
 ## Category
 
@@ -49,34 +59,34 @@ English listing with Vietnamese-first learning content.
 
 ### activeTab
 
-Used to read the user's current selection after they click the extension popup.
+Used to read the user's current selection after they click the extension popup, and to inject the grammar result card into the active tab.
 
 ### contextMenus
 
-Used to add "Analyze Japanese grammar" for selected text.
+Used to add "Analyze Japanese grammar" to the right-click menu for selected text.
 
 ### storage
 
-Used to save extension settings, history, notebook items, and review metadata locally.
+Used to save extension settings, analysis history, notebook items, Pro entitlement status, and spaced-repetition metadata locally on the user's device.
 
 ### sidePanel
 
-Used to show detailed grammar explanations, examples, confusions, notebook, and review queue.
+Used to show the detailed grammar explanation, examples, confusions, notebook, and SRS review queue in a persistent side panel.
 
 ### Content script match: all URLs
 
-The content script is declared for all sites so users can analyze selected Japanese text, show the floating 文 button, display on-page result cards, and run user-triggered page scans on whatever site they are reading. All analysis runs locally in the extension; no page content is sent anywhere by default.
+The content script is declared for all sites so users can analyze selected Japanese text, display the floating 文 button and on-page result cards, show in-sentence grammar highlights, and run user-triggered page scans on whatever Japanese website they are reading. All analysis runs locally in the extension; no page content is sent anywhere by default.
 
 ### optional_host_permissions (requested at runtime)
 
-No broad host permission is requested at install time. When — and only when — a user enables Cloud AI and saves their own backend endpoint, the extension requests host access to that single origin at runtime. Default and on-device AI usage never trigger this.
+No broad host permission is requested at install time. When — and only when — a user enables Cloud AI and saves their own backend endpoint URL, the extension requests access to that single origin at runtime via a user gesture (Save button). Default features (local detection, highlight, TTS, notebook, export) never trigger this request.
 
 ## Screenshots To Capture
 
-- Popup with Analyze Selection, Manual Input, Scan Page, and settings.
-- On-page scan panel opened with Alt+Shift+G.
-- Floating 文 button on selected Japanese text.
-- On-page result card.
-- Side Panel detail view.
-- Notebook/review queue.
-- Options page with privacy and AI cloud settings.
+1. Floating 文 button on selected Japanese text → on-page result card with in-sentence highlight (color-coded JLPT level) and 🔊 TTS button.
+2. Popup: Analyze Selection result with match list.
+3. Popup: Manual Input tab + Scan Page result.
+4. Side Panel: detail view with examples, confusions, and Anki/CSV export buttons (Pro unlocked).
+5. On-page scan panel opened with Alt+Shift+G showing sentence list.
+6. Notebook / SRS review queue in side panel.
+7. Options page — Pro panel showing "Simulate Pro" toggle and Free/Pro badge.
