@@ -109,10 +109,40 @@ async function loadSettings() {
   renderSettings();
 }
 
+// Cloud AI talks to a user-configured backend. Instead of a broad install-time
+// host permission, request access to just that origin at runtime (the user
+// gesture from the Save click is still active for the first await).
+async function ensureCloudHostPermission(nextSettings) {
+  if (nextSettings.aiMode !== "cloud") return;
+  const raw = String(nextSettings.cloudEndpoint || "").trim();
+  if (!raw) return;
+
+  let origin;
+  try {
+    origin = new URL(raw).origin;
+  } catch (_error) {
+    return; // Invalid URL; the backend call will surface the error later.
+  }
+  if (origin.startsWith("http://") && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(origin)) return;
+
+  const pattern = `${origin}/*`;
+  try {
+    if (await chrome.permissions.contains({ origins: [pattern] })) return;
+    const granted = await chrome.permissions.request({ origins: [pattern] });
+    if (!granted) {
+      showStatus("Chưa cấp quyền truy cập endpoint — Cloud AI sẽ không gọi được.");
+    }
+  } catch (error) {
+    showStatus(error.message);
+  }
+}
+
 async function saveSettings() {
+  const next = readSettingsFromForm();
+  await ensureCloudHostPermission(next);
   settings = await sendRuntimeMessage({
     type: "UPDATE_SETTINGS",
-    settings: readSettingsFromForm()
+    settings: next
   });
   renderSettings();
   showStatus("Settings saved");

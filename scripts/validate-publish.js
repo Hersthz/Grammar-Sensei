@@ -92,7 +92,16 @@ const unexpectedPermissions = (manifest.permissions || []).filter((permission) =
 if (unexpectedPermissions.length) fail(`Unexpected permissions: ${unexpectedPermissions.join(", ")}`);
 
 if (manifest.host_permissions?.includes("<all_urls>")) {
-  warn("Broad <all_urls> host permission is present; ensure store listing justifies content script features.");
+  fail("Do not request <all_urls> as an install-time host permission; use optional_host_permissions and request the cloud endpoint origin at runtime.");
+}
+
+const contentMatches = (manifest.content_scripts || []).flatMap((entry) => entry.matches || []);
+if (contentMatches.includes("<all_urls>")) {
+  warn("content_scripts match <all_urls> to power on-page grammar analysis on any site; justify this in the store listing.");
+}
+
+if (!(manifest.optional_host_permissions || []).length) {
+  warn("No optional_host_permissions declared; Cloud AI endpoint access will be blocked when the user enables cloud mode.");
 }
 
 assertFile(manifest.background?.service_worker || "");

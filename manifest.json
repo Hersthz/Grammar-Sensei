@@ -11,8 +11,9 @@
     "sidePanel",
     "storage"
   ],
-  "host_permissions": [
-    "<all_urls>"
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://localhost/*"
   ],
   "background": {
     "service_worker": "background.js"

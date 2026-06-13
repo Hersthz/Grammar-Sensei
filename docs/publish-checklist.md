@@ -63,6 +63,9 @@ node test-srs.js
 - AI mode Cloud without consent shows setup warning.
 - AI mode Cloud without endpoint shows setup warning.
 - AI mode Cloud sends only current sentence and compact local result to configured backend.
+- Saving Cloud mode with an endpoint prompts for host access to that single origin only (no install-time broad host permission).
+- Denying the host permission prompt leaves Cloud AI unable to call out (graceful warning), while local and on-device AI keep working.
+- On Microsoft Edge (Chromium): core local features work; on-device Gemini Nano may be unavailable and degrades gracefully.
 
 ## Store Assets
 

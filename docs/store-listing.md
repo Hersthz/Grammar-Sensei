@@ -63,9 +63,13 @@ Used to save extension settings, history, notebook items, and review metadata lo
 
 Used to show detailed grammar explanations, examples, confusions, notebook, and review queue.
 
-### Host permission: all URLs
+### Content script match: all URLs
 
-Used to inject the content script so users can analyze selected Japanese text, show the floating 文 button, display on-page result cards, and run user-triggered page scans on websites they visit.
+The content script is declared for all sites so users can analyze selected Japanese text, show the floating 文 button, display on-page result cards, and run user-triggered page scans on whatever site they are reading. All analysis runs locally in the extension; no page content is sent anywhere by default.
+
+### optional_host_permissions (requested at runtime)
+
+No broad host permission is requested at install time. When — and only when — a user enables Cloud AI and saves their own backend endpoint, the extension requests host access to that single origin at runtime. Default and on-device AI usage never trigger this.
 
 ## Screenshots To Capture
 
