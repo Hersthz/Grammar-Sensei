@@ -209,6 +209,44 @@ const grammarEntries = context.GrammarSenseiData.GRAMMAR_DATABASE;
   assert.strictEqual(fenced.available, true);
   assert.strictEqual(fenced.matches[0].pattern, "〜たい");
 
+  // --- aiResultToAnalysis: AI result → local analysis shape for the UI ---
+
+  const entryById = (id) => grammarEntries.find((entry) => entry.id === id) || null;
+
+  // 5. Unavailable / empty AI results convert to null (no fake card).
+  assert.strictEqual(AIProvider.aiResultToAnalysis({ available: false }, { entryById }), null);
+  assert.strictEqual(AIProvider.aiResultToAnalysis({ available: true, matches: [] }, { entryById }), null);
+
+  // 6. Available AI result with a known grammarId converts to a renderable analysis,
+  //    flags aiGenerated, scales confidence 0-1 → 0-99, and grafts DB examples.
+  const aiAnalysis = AIProvider.aiResultToAnalysis(onDevice, {
+    input: "日本に行ったことがあります。",
+    source: "selection",
+    entryById
+  });
+  assert(aiAnalysis && aiAnalysis.aiGenerated === true);
+  assert.strictEqual(aiAnalysis.primary.id, "ta-koto-ga-aru");
+  assert.strictEqual(aiAnalysis.primary.confidence, 90);
+  assert(aiAnalysis.primary.tags.includes("ai"));
+  assert(Array.isArray(aiAnalysis.matches) && aiAnalysis.matches.length === 1);
+  assert.strictEqual(aiAnalysis.jlpt_level, "N4");
+  // DB entry resolved → curated examples grafted on for a complete card.
+  assert(aiAnalysis.primary.examples.length > 0);
+
+  // 7. AI match with an unknown grammarId still converts (no DB entry needed).
+  const novel = AIProvider.aiResultToAnalysis({
+    available: true,
+    mode: "browser",
+    detectedLanguage: "ja",
+    japaneseEquivalent: "",
+    matches: [{ pattern: "〜とはいえ", grammarId: "", matchedText: "とはいえ", jlptLevel: "N1", explanationVi: "tuy nói là ... nhưng", confidence: 0.6 }],
+    warning: ""
+  }, { input: "とはいえ難しい。", source: "selection", entryById });
+  assert(novel && novel.aiGenerated === true);
+  assert.strictEqual(novel.primary.display, "〜とはいえ");
+  assert.strictEqual(novel.primary.confidence, 60);
+  assert(novel.primary.id.startsWith("ai:"));
+
   console.log("AI provider tests passed.");
 })().catch((error) => {
   console.error(error);

@@ -25,6 +25,7 @@
     semanticMode: true,
     debugMatches: false,
     aiMode: "off",
+    autoAiFallback: true,
     uiLanguage: "vi",
     disabledDomains: []
   };
@@ -445,8 +446,8 @@
     card.innerHTML = `
       <div class="gs-card-header">
         <div>
-          <div class="gs-card-title">Grammar Sensei</div>
-          <div class="gs-card-subtitle">${hasResult ? `${matches.length} mẫu được phát hiện` : "Chưa có match chắc chắn"}</div>
+          <div class="gs-card-title">Grammar Sensei${data.aiGenerated ? ` <span class="gs-ai-pill">AI on-device</span>` : ""}</div>
+          <div class="gs-card-subtitle">${hasResult ? `${matches.length} mẫu được phát hiện${data.aiGenerated ? " · suy luận bằng AI" : ""}` : "Chưa có match chắc chắn"}</div>
         </div>
         <div class="gs-card-actions">
           <button class="gs-icon-btn gs-copy-btn" type="button" title="Copy summary">Copy</button>
@@ -479,6 +480,13 @@
           <section class="gs-section">
             <div class="gs-section-label">Romaji</div>
             <div class="gs-code-line">${escapeHTML(data.romaji)}</div>
+          </section>
+        ` : ""}
+
+        ${data.japaneseEquivalent ? `
+          <section class="gs-section">
+            <div class="gs-section-label">Mẫu tiếng Nhật tương đương</div>
+            <div class="gs-code-line">${escapeHTML(data.japaneseEquivalent)}</div>
           </section>
         ` : ""}
 

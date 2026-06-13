@@ -49,6 +49,7 @@ function normalizeSettings(items = {}) {
     confidenceThreshold: clampNumber(items.confidenceThreshold, 0, 99, DEFAULT_SETTINGS.confidenceThreshold),
     aiTimeoutMs: clampNumber(items.aiTimeoutMs, 3000, 30000, DEFAULT_SETTINGS.aiTimeoutMs),
     aiMode: ["off", "browser", "cloud"].includes(items.aiMode) ? items.aiMode : DEFAULT_SETTINGS.aiMode,
+    autoAiFallback: items.autoAiFallback !== false,
     cloudEndpoint: typeof items.cloudEndpoint === "string" ? items.cloudEndpoint.trim() : DEFAULT_SETTINGS.cloudEndpoint,
     aiConsentAccepted: Boolean(items.aiConsentAccepted),
     aiStrictMode: items.aiStrictMode !== false,
@@ -149,6 +150,54 @@ function analysisOptions(settings, source) {
 
 function analyzeGrammar(text, source, settings) {
   return Analyzer.analyzeText(text, analysisOptions(settings, source));
+}
+
+// High-frequency / background sources never trigger automatic AI so the
+// on-device model is not spammed (hover fires constantly, scan is per-batch).
+const AI_FALLBACK_BLOCKED_SOURCES = new Set(["hover", "auto-selection", "scan", "shift-scan", "scan-batch"]);
+
+function buildAiContext(text, localResult, source, settings) {
+  return {
+    grammarEntries: Analyzer.entries(),
+    grammarDbVersion: GrammarSenseiData.DB_VERSION,
+    localResult,
+    strictMode: settings.aiStrictMode,
+    detectedLanguage: localResult?.detectedLanguage || "unknown",
+    source,
+    uiLanguage: settings.uiLanguage,
+    extensionVersion: chrome.runtime.getManifest?.().version || "1.0.0",
+    aiConsentAccepted: settings.aiConsentAccepted,
+    cloudEndpoint: settings.cloudEndpoint,
+    aiTimeoutMs: settings.aiTimeoutMs
+  };
+}
+
+// When local analysis finds no confident match, transparently fall back to the
+// on-device AI (Gemini Nano) so any grammar pattern can still be surfaced
+// without the user clicking "Ask AI". Browser mode only — cloud stays manual
+// because it leaves the device. Returns an analysis-shaped object or null.
+async function maybeAiFallback(text, localResult, source, settings) {
+  if (!text) return null;
+  if (settings.aiMode !== "browser" || !settings.autoAiFallback) return null;
+  if (localResult?.primary) return null;
+  if (AI_FALLBACK_BLOCKED_SOURCES.has(source)) return null;
+
+  try {
+    const provider = AIProvider.createAIProvider("browser");
+    const aiResult = await provider.analyze(text, buildAiContext(text, localResult, source, settings));
+    if (!aiResult?.available) return null;
+
+    const enriched = AIProvider.aiResultToAnalysis(aiResult, {
+      localResult,
+      input: text,
+      source,
+      entryById: Analyzer.entryById
+    });
+    return enriched;
+  } catch (error) {
+    console.warn("Grammar Sensei auto AI fallback:", error?.message || error);
+    return null;
+  }
 }
 
 function summarizeHistoryEntry(text, analysis, source) {
@@ -415,7 +464,11 @@ async function handleMessage(request, sender) {
         throw new Error("Grammar Sensei is disabled on this domain.");
       }
       const source = request.source || "selection";
-      const analysis = analyzeGrammar(request.text, source, settings);
+      const localAnalysis = analyzeGrammar(request.text, source, settings);
+      const fallback = request.allowAiFallback === false
+        ? null
+        : await maybeAiFallback(request.text, localAnalysis, source, settings);
+      const analysis = fallback || localAnalysis;
       if (request.saveHistory !== false) {
         await saveHistoryEntry(request.text, analysis, source);
       }

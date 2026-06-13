@@ -26,6 +26,7 @@
     semanticMode: true,
     debugMatches: false,
     aiMode: "off",
+    autoAiFallback: true,
     cloudEndpoint: "",
     aiConsentAccepted: false,
     aiStrictMode: true,

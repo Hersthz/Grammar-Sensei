@@ -19,6 +19,7 @@ const DEFAULT_SETTINGS = globalThis.GRAMMAR_SENSEI_DEFAULT_SETTINGS || {
   semanticMode: true,
   debugMatches: false,
   aiMode: "off",
+  autoAiFallback: true,
   cloudEndpoint: "",
   aiConsentAccepted: false,
   aiStrictMode: true,

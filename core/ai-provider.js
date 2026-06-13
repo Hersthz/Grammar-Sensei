@@ -541,6 +541,80 @@
     }
   }
 
+  // Convert an AI provider result (browser or cloud) into the same shape the
+  // local Analyzer produces, so the popup / side panel / scan UI can render an
+  // AI-found grammar exactly like a local match (just flagged aiGenerated).
+  // When a returned grammarId resolves to a database entry, we graft the curated
+  // examples / confusions / related onto the AI explanation for the best of both.
+  function aiResultToAnalysis(aiResult, options = {}) {
+    if (!aiResult || aiResult.available === false) return null;
+    const aiMatches = Array.isArray(aiResult.matches) ? aiResult.matches : [];
+    const resolveEntry = typeof options.entryById === "function" ? options.entryById : () => null;
+    const input = options.input != null ? String(options.input) : (aiResult.originalSentence || "");
+    const source = options.source || "ai";
+    const local = options.localResult || null;
+
+    const matches = aiMatches.map((match) => {
+      const entry = match.grammarId ? resolveEntry(match.grammarId) : null;
+      const example = entry?.examples?.[0] || null;
+      const confidence = clampNumber(Math.round(Number(match.confidence || 0) * 100), 0, 99, 0);
+      return {
+        id: match.grammarId || `ai:${(match.pattern || "match").slice(0, 60)}`,
+        grammar: match.pattern || entry?.pattern || match.grammarId || "AI match",
+        display: match.pattern || entry?.display || entry?.pattern || match.grammarId || "AI match",
+        detected: match.matchedText || "",
+        matchedText: match.matchedText || "",
+        meaning_vi: match.meaningVi || entry?.meaning_vi || "",
+        meaning_en: match.meaningEn || entry?.meaning_en || "",
+        meaning: match.meaningVi || entry?.meaning_vi || match.meaningEn || "",
+        structure: match.structure || entry?.structure || "",
+        structures: entry?.structures || (match.structure ? [match.structure] : []),
+        example,
+        exampleText: example ? `${example.ja} (${example.vi})` : "",
+        examples: entry?.examples || [],
+        jlpt_level: match.jlptLevel || entry?.jlpt_level || "-",
+        nuance_vi: match.explanationVi || "",
+        nuance_en: "",
+        whyMatched: match.whyMatched || "",
+        confusions: (match.possibleConfusions && match.possibleConfusions.length ? match.possibleConfusions : entry?.confusions) || [],
+        related: entry?.related || [],
+        tags: ["ai", ...(entry?.tags || [])],
+        confidence,
+        index: 0,
+        score: confidence,
+        aiGenerated: true
+      };
+    }).filter((match) => match.display || match.nuance_vi);
+
+    if (!matches.length) return null;
+    const primary = matches[0];
+
+    return {
+      input,
+      normalized_input: local?.normalized_input || input,
+      detectedLanguage: aiResult.detectedLanguage || local?.detectedLanguage || "unknown",
+      source,
+      primary,
+      matches,
+      suggestions: ["Kết quả này do AI trên thiết bị (Gemini Nano) suy luận khi mẫu không có sẵn trong từ điển local."],
+      romaji: local?.romaji || "",
+      romajiQuality: local?.romajiQuality || "",
+      translation_vi: "",
+      warnings: aiResult.warning ? [aiResult.warning] : [],
+      grammar: primary.grammar,
+      meaning: primary.meaning_vi,
+      structure: primary.structure,
+      example: primary.exampleText || primary.example?.ja || "-",
+      jlpt_level: primary.jlpt_level,
+      confidence: primary.confidence,
+      tags: [...new Set(matches.flatMap((match) => match.tags))],
+      all_matches: matches.map((match) => match.display),
+      aiGenerated: true,
+      aiMode: aiResult.mode || "browser",
+      japaneseEquivalent: aiResult.japaneseEquivalent || ""
+    };
+  }
+
   function createAIProvider(mode) {
     if (mode === "browser") return new BrowserAIProvider();
     if (mode === "cloud") return new CloudAIProvider();
@@ -557,6 +631,7 @@
     buildBackendPayload,
     normalizeCloudEndpoint,
     normalizeAIResponse,
+    aiResultToAnalysis,
     safeParseJson,
     NoAIProvider,
     BrowserAIProvider,

@@ -19,6 +19,7 @@ const DEFAULT_SETTINGS = globalThis.GRAMMAR_SENSEI_DEFAULT_SETTINGS || {
   semanticMode: true,
   debugMatches: false,
   aiMode: "off",
+  autoAiFallback: true,
   cloudEndpoint: "",
   aiConsentAccepted: false,
   aiStrictMode: true,
@@ -189,7 +190,7 @@ function renderSettings() {
   els.statusText.textContent = settings.enabled ? "On" : "Off";
   els.aiWarning.dataset.visible = String(settings.aiMode !== "off");
   els.aiWarning.textContent = settings.aiMode === "browser"
-    ? "On-device AI (Gemini Nano) runs locally in Chrome. Nothing is sent over the network. First use may download the model."
+    ? `On-device AI (Gemini Nano) runs locally in Chrome. Nothing is sent over the network. First use may download the model.${settings.autoAiFallback ? " Auto-fallback fills in grammar the local DB misses." : ""}`
     : "Cloud AI sends only the current sentence and compact local result to the backend endpoint configured in Options.";
   els.toggleDomain.textContent = isCurrentDomainDisabled() ? "Enable This Domain" : "Disable This Domain";
 }

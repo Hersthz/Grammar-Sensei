@@ -151,11 +151,18 @@ function renderDetail() {
 
         <div class="topline">
           <div>
-            <div class="label">Mẫu ngữ pháp</div>
+            <div class="label">Mẫu ngữ pháp${analysis.aiGenerated ? ` <span class="badge ai-badge">AI on-device</span>` : ""}</div>
             <div class="pattern">${escapeHTML(primary.display || primary.grammar)}</div>
           </div>
           <span class="badge">${escapeHTML(primary.jlpt_level || "-")}</span>
         </div>
+
+        ${analysis.japaneseEquivalent ? `
+          <div class="section">
+            <div class="label">Mẫu tiếng Nhật tương đương</div>
+            <div class="code-line">${escapeHTML(analysis.japaneseEquivalent)}</div>
+          </div>
+        ` : ""}
 
         <div class="section">
           <div class="label">Matched text</div>
