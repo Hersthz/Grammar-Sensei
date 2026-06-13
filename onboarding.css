@@ -93,11 +93,50 @@ h1 {
 
 .step,
 .sample,
-.privacy {
+.privacy,
+.features {
   border: 1px solid #e7e5e4;
   border-radius: 8px;
   background: #fff;
   padding: 16px;
+}
+
+.features {
+  margin-top: 16px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.feature {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: start;
+  gap: 4px 10px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #faf9f7;
+}
+
+.feature-icon {
+  grid-row: span 2;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.feature h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #1c1917;
+}
+
+.feature p {
+  color: #57534e;
+  font-size: 13px;
 }
 
 .step {
@@ -179,7 +218,8 @@ code {
     flex: 1;
   }
 
-  .grid {
+  .grid,
+  .feature-grid {
     grid-template-columns: 1fr;
   }
 }

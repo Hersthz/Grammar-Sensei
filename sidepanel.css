@@ -264,6 +264,12 @@ h1 {
   text-transform: uppercase;
 }
 
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .notebook-list {
   display: grid;
   gap: 8px;

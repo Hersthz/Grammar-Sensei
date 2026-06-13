@@ -138,6 +138,71 @@ async function copyText(text) {
   return true;
 }
 
+function downloadFile(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function notebookToCsv(items) {
+  const headers = [
+    "grammar", "jlpt_level", "sentence", "matchedText",
+    "meaning_vi", "meaning_en", "structure", "note", "createdAt"
+  ];
+  const rows = items.map((item) => headers.map((key) => csvCell(item[key])).join(","));
+  return [headers.join(","), ...rows].join("\r\n");
+}
+
+// Anki TSV: tabs separate fields, newlines separate notes. Anki renders HTML,
+// so internal newlines become <br> and stray tabs are flattened to spaces.
+function ankiField(value) {
+  return String(value ?? "").replace(/\t/g, " ").replace(/\r?\n/g, "<br>");
+}
+
+function notebookToAnki(items) {
+  const notes = items.map((item) => {
+    const front = ankiField(item.sentence || item.matchedText || item.grammar);
+    const back = [
+      `<b>${ankiField(item.grammar)}</b> (${ankiField(item.jlpt_level || "-")})`,
+      item.matchedText ? `📌 ${ankiField(item.matchedText)}` : "",
+      item.meaning_vi ? `🇻🇳 ${ankiField(item.meaning_vi)}` : "",
+      item.meaning_en ? `🇬🇧 ${ankiField(item.meaning_en)}` : "",
+      item.structure ? `🧩 ${ankiField(item.structure)}` : "",
+      item.note ? `📝 ${ankiField(item.note)}` : ""
+    ].filter(Boolean).join("<br>");
+    return `${front}\t${back}`;
+  });
+  // Header tells Anki the separator and that HTML is allowed.
+  return `#separator:tab\n#html:true\n${notes.join("\n")}`;
+}
+
+function exportNotebook(format) {
+  if (!notebook.length) {
+    showStatus("Notebook trống — chưa có gì để xuất");
+    return;
+  }
+  const date = new Date().toISOString().slice(0, 10);
+  if (format === "anki") {
+    downloadFile(`grammar-sensei-anki-${date}.txt`, notebookToAnki(notebook), "text/plain;charset=utf-8");
+    showStatus(`Đã xuất ${notebook.length} thẻ Anki`);
+  } else {
+    // Prepend BOM so Excel reads UTF-8 Japanese/Vietnamese correctly.
+    downloadFile(`grammar-sensei-${date}.csv`, `﻿${notebookToCsv(notebook)}`, "text/csv;charset=utf-8");
+    showStatus(`Đã xuất ${notebook.length} dòng CSV`);
+  }
+}
+
 function formatSummary(analysis) {
   const primary = analysis?.primary || {};
   return [
@@ -528,8 +593,13 @@ async function init() {
     refreshState: document.getElementById("refresh-state"),
     reloadReview: document.getElementById("reload-review"),
     reloadNotebook: document.getElementById("reload-notebook"),
+    exportAnki: document.getElementById("export-anki"),
+    exportCsv: document.getElementById("export-csv"),
     status: document.getElementById("status")
   });
+
+  els.exportAnki.addEventListener("click", () => exportNotebook("anki"));
+  els.exportCsv.addEventListener("click", () => exportNotebook("csv"));
 
   document.addEventListener("click", (event) => {
     const speakBtn = event.target.closest(".speak-btn");
