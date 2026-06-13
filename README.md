@@ -67,11 +67,12 @@ Grammar Sensei is local-only by default.
 ```text
 GRAMMAR-SENSEI/
   data/
-    grammar-database.js
-    grammar-phase4-pack.js
-    grammar-phase8-pack.js
-    semantic-map.js
-    semantic-phase8-map.js
+    grammar-n5.js
+    grammar-n4.js
+    grammar-n3.js
+    grammar-n2.js
+    grammar-n1.js
+    semantic-n5.js  (… n4 / n3 / n2 / n1)
   core/
     normalize.js
     romaji.js
@@ -201,7 +202,7 @@ The backend contract lives in `docs/cloud-ai-contract.md`. The extension sends t
 
 ## Adding Grammar Patterns
 
-Edit `data/grammar-database.js`. Each entry should include:
+Grammar entries are organized by JLPT level. Add a pattern to the file for its level: `data/grammar-n5.js`, `grammar-n4.js`, `grammar-n3.js`, `grammar-n2.js`, or `grammar-n1.js`. Each entry should include:
 
 - `id`
 - `pattern`
@@ -221,11 +222,11 @@ Edit `data/grammar-database.js`. Each entry should include:
 - `tags`
 - `priority`
 
-Use specific variants/regex and avoid broad patterns unless priority is low.
+Use specific variants/regex and avoid broad patterns unless priority is low. Prefer leaving ambiguous morphology (passive/potential られる, conjugated 可能形) to the AI fallback rather than adding a broad regex that mislabels.
 
-For curated expansions, use `data/grammar-phase4-pack.js` and `data/grammar-phase8-pack.js` while the database is still being reviewed. Once entries are stable, they can be merged back into the base database.
+Each `grammar-n*.js` file pushes its entries with `Data.GRAMMAR_DATABASE = (Data.GRAMMAR_DATABASE || []).concat(entries)`. Register new files in `background.js` importScripts and the test files' `files` arrays, and bump the DB-count assertion in `test-analyzer.js`.
 
-Semantic Vietnamese/English intent mappings live in `data/semantic-map.js` and `data/semantic-phase8-map.js`.
+Semantic Vietnamese/English intent mappings are also organized by level: `data/semantic-n5.js` … `semantic-n1.js` (grouped by the level of the target grammarId).
 
 ## Local NLP Layer
 

@@ -6,9 +6,11 @@ const assert = require("assert");
 
 const root = __dirname;
 const files = [
-  "data/grammar-database.js",
-  "data/grammar-phase4-pack.js",
-  "data/grammar-phase8-pack.js",
+  "data/grammar-n5.js",
+  "data/grammar-n4.js",
+  "data/grammar-n3.js",
+  "data/grammar-n2.js",
+  "data/grammar-n1.js",
   "core/ai-provider.js"
 ];
 
