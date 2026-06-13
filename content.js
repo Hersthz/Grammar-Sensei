@@ -24,7 +24,7 @@
     confidenceThreshold: 70,
     semanticMode: true,
     debugMatches: false,
-    aiMode: "off",
+    aiMode: "browser",
     autoAiFallback: true,
     uiLanguage: "vi",
     disabledDomains: []

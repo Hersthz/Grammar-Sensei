@@ -12,6 +12,7 @@ importScripts(
   "data/grammar-phase8-pack.js",
   "data/grammar-phase9-pack.js",
   "data/grammar-phase10-pack.js",
+  "data/grammar-phase11-pack.js",
   "data/semantic-map.js",
   "data/semantic-phase8-map.js",
   "data/semantic-phase9-map.js",
@@ -198,18 +199,22 @@ function buildAiContext(text, localResult, source, settings) {
   };
 }
 
-// When local analysis finds no confident match, transparently fall back to the
-// on-device AI (Gemini Nano) so any grammar pattern can still be surfaced
-// without the user clicking "Ask AI". Browser mode only — cloud stays manual
-// because it leaves the device. Returns an analysis-shaped object or null.
+// When local analysis finds no confident match, transparently fall back to AI
+// so any grammar pattern can still be surfaced without the user clicking
+// "Ask AI". Fires for whichever AI mode is active: on-device Gemini Nano
+// (browser) needs no setup and never leaves the device; cloud auto-fires only
+// once the user has accepted consent and configured an endpoint (the provider
+// itself returns available:false otherwise, so this stays a no-op until then).
+// High-frequency sources (hover/scan) are still blocked to avoid spamming the
+// model. Returns an analysis-shaped object or null.
 async function maybeAiFallback(text, localResult, source, settings) {
   if (!text) return null;
-  if (settings.aiMode !== "browser" || !settings.autoAiFallback) return null;
+  if (settings.aiMode === "off" || !settings.autoAiFallback) return null;
   if (localResult?.primary) return null;
   if (AI_FALLBACK_BLOCKED_SOURCES.has(source)) return null;
 
   try {
-    const provider = AIProvider.createAIProvider("browser");
+    const provider = AIProvider.createAIProvider(settings.aiMode);
     const aiResult = await provider.analyze(text, buildAiContext(text, localResult, source, settings));
     if (!aiResult?.available) return null;
 

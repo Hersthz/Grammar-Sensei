@@ -11,6 +11,7 @@ const files = [
   "data/grammar-phase8-pack.js",
   "data/grammar-phase9-pack.js",
   "data/grammar-phase10-pack.js",
+  "data/grammar-phase11-pack.js",
   "data/semantic-map.js",
   "data/semantic-phase8-map.js",
   "data/semantic-phase9-map.js",
@@ -36,7 +37,7 @@ for (const file of files) {
 const Analyzer = context.GrammarSenseiCore.Analyzer;
 const summary = Analyzer.getSummary();
 assert(summary.total >= 200, `Expected at least 200 grammar patterns, got ${summary.total}`);
-assert.strictEqual(summary.total, 329, "DB count should stay stable unless content is intentionally changed (N5:29 N4:58 N3:78 N2:91 N1:73)");
+assert.strictEqual(summary.total, 378, "DB count should stay stable unless content is intentionally changed (N5:34 N4:75 N3:105 N2:91 N1:73)");
 
 const cases = [
   ["彼は本を読んでいる。", "te-iru", "N5"],

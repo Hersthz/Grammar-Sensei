@@ -64,7 +64,10 @@ node test-pro.js
 - Options "Simulate Pro" toggle flips notebook export and the popup Pro badge between Free and Pro.
 - Free page scan caps at the free sentence limit; Pro scans up to the configured limit.
 - Clear history and clear notebook work.
-- AI mode Off does not call cloud.
+- Default AI mode is on-device (browser): on Chrome 138+ with Gemini Nano available, selecting a sentence whose grammar is NOT in the local DB auto-shows an AI result (no button press); the loading card appears while it runs.
+- On-device auto fallback degrades gracefully where Gemini Nano is unavailable (local "not detected" stands, no error spam).
+- Hover and page scan never trigger AI (no model spam while browsing).
+- AI mode Off does not call any AI (local only).
 - AI mode Cloud without consent shows setup warning.
 - AI mode Cloud without endpoint shows setup warning.
 - AI mode Cloud sends only current sentence and compact local result to configured backend.

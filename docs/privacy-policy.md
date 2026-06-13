@@ -6,15 +6,15 @@ Grammar Sensei is a Chrome extension for learning Japanese grammar. It analyzes 
 
 ## Local-First Default
 
-Grammar Sensei is local-first by default. All core features — grammar detection, in-sentence highlighting, text-to-speech playback, notebook, and spaced-repetition review — run entirely inside your browser with no network requests.
+Grammar Sensei is local-first. All core features — grammar detection, in-sentence highlighting, text-to-speech playback, notebook, spaced-repetition review, and the on-device AI fallback — run entirely inside your browser with no network requests.
 
 - Grammar matching runs inside the Chrome extension using an on-device pattern database.
 - In-sentence highlight and TTS use browser built-in APIs (no external service).
 - Hover mode is disabled by default.
 - Page scanning happens only when the user clicks Scan Page or presses Alt+Shift+G.
 - Shift scan analyzes only the sentence under the cursor while the user holds Shift.
-- Cloud AI is off by default.
-- On-device Gemini Nano (where available) runs on your machine and sends nothing over the network.
+- On-device AI (Gemini Nano, built into Chrome) is the default AI mode. When the local database has no confident match for a sentence the user actively queried, it analyzes that sentence automatically. It runs on the user's machine and sends nothing over the network. On devices or Chrome versions where it is unavailable, it simply does nothing and the local result stands.
+- Cloud AI is a separate mode that is off until the user configures it (see below).
 
 ## Data Processed Locally
 
@@ -36,10 +36,11 @@ This data is stored locally in Chrome storage on the user's device. It is never 
 
 Cloud AI is off by default and runs only when all of the following are true:
 
-- AI mode is set to Cloud in Options;
+- AI mode is set to Cloud in Options (the default is on-device, not cloud);
 - the user accepts the AI privacy consent;
-- a backend endpoint URL is configured by the user;
-- the user clicks Ask AI.
+- a backend endpoint URL is configured by the user.
+
+Once the user has opted into Cloud mode and configured an endpoint, cloud analysis may fire automatically for sentences the user actively queries (selection, manual input, context menu) when the local database has no confident match — the user does not have to press a separate button each time. High-frequency background sources (hover and page scan) never trigger cloud calls. The user can return to on-device or off mode at any time in Options.
 
 When Cloud AI is used, Grammar Sensei sends only:
 
@@ -95,7 +96,7 @@ Users can:
 - clear notebook and review data;
 - export all local data to JSON;
 - import a previously exported JSON backup;
-- keep AI mode off (default);
+- switch AI mode between on-device (default), off, or cloud at any time;
 - export notebook to Anki or CSV (Pro).
 
 ## Changes to This Policy

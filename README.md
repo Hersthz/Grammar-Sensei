@@ -179,7 +179,7 @@ Defaults:
   confidenceThreshold: 70,
   semanticMode: true,
   debugMatches: false,
-  aiMode: "off",
+  aiMode: "browser", // on-device Gemini Nano auto-fallback; "off" or "cloud" also available
   cloudEndpoint: "",
   aiConsentAccepted: false,
   aiStrictMode: true,
