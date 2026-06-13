@@ -20,7 +20,7 @@ Highlight Japanese text, click the floating 文 button, or use the right-click m
 
 Key features:
 
-- Local grammar detection with 378 JLPT N5–N1 patterns — runs on your device, no server.
+- Local grammar detection with 449 JLPT N5–N1 patterns — runs on your device, no server.
 - Automatic on-device AI fallback — when a sentence uses grammar outside the local database, Gemini Nano (built into Chrome) analyzes it automatically, on your machine, with no network call and no button to press.
 - In-sentence highlight — color-coded by JLPT level so you see exactly which part triggered the rule.
 - Listen (TTS) — hear any Japanese sentence spoken aloud with one click using the browser's built-in voice.

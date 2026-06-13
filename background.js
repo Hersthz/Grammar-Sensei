@@ -13,6 +13,8 @@ importScripts(
   "data/grammar-phase9-pack.js",
   "data/grammar-phase10-pack.js",
   "data/grammar-phase11-pack.js",
+  "data/grammar-phase12-pack.js",
+  "data/grammar-phase13-pack.js",
   "data/semantic-map.js",
   "data/semantic-phase8-map.js",
   "data/semantic-phase9-map.js",
