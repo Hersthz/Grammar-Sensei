@@ -89,9 +89,88 @@
     return div.innerHTML;
   }
 
+  function escapeAttr(value) {
+    return escapeHTML(value).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
   function truncate(value, max) {
     const text = String(value || "");
     return text.length > max ? `${text.slice(0, max)}...` : text;
+  }
+
+  function speakJapanese(text) {
+    const synth = window.speechSynthesis;
+    if (!text || !synth) return false;
+    try {
+      synth.cancel();
+      const utterance = new SpeechSynthesisUtterance(String(text));
+      utterance.lang = "ja-JP";
+      utterance.rate = 0.9;
+      const voices = synth.getVoices() || [];
+      const jaVoice = voices.find((voice) => /ja(-|_)?JP/i.test(voice.lang) || /japanese/i.test(voice.name));
+      if (jaVoice) utterance.voice = jaVoice;
+      synth.speak(utterance);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function speakButton(text) {
+    if (!text || !containsJapanese(text)) return "";
+    return `<button class="gs-speak-btn" type="button" data-speak="${escapeAttr(text)}" title="Nghe phát âm" aria-label="Nghe phát âm">🔊</button>`;
+  }
+
+  // Build non-overlapping highlight ranges by locating each match's grammar
+  // phrase inside the displayed text. Higher-confidence / longer phrases win.
+  function buildHighlightRanges(text, matches) {
+    const ranges = [];
+    const sorted = [...(matches || [])]
+      .filter((match) => match && (match.matchedText || match.detected))
+      .sort((a, b) => {
+        const lenA = (a.matchedText || a.detected || "").length;
+        const lenB = (b.matchedText || b.detected || "").length;
+        if (lenB !== lenA) return lenB - lenA;
+        return Number(b.confidence || 0) - Number(a.confidence || 0);
+      });
+
+    for (const match of sorted) {
+      const term = match.matchedText || match.detected;
+      if (!term) continue;
+      let from = 0;
+      let idx = text.indexOf(term, from);
+      while (idx >= 0) {
+        const start = idx;
+        const end = idx + term.length;
+        const overlaps = ranges.some((range) => start < range.end && end > range.start);
+        if (!overlaps) ranges.push({ start, end, match });
+        from = idx + Math.max(1, term.length);
+        idx = text.indexOf(term, from);
+      }
+    }
+
+    return ranges.sort((a, b) => a.start - b.start);
+  }
+
+  function renderHighlightedText(text, matches) {
+    const safe = String(text || "");
+    const ranges = buildHighlightRanges(safe, matches);
+    if (!ranges.length) return escapeHTML(safe);
+
+    let html = "";
+    let cursor = 0;
+    for (const range of ranges) {
+      if (range.start < cursor) continue;
+      html += escapeHTML(safe.slice(cursor, range.start));
+      const label = [range.match.display || range.match.grammar, range.match.jlpt_level]
+        .filter(Boolean)
+        .join(" · ");
+      const level = range.match.jlpt_level || "none";
+      html += `<mark class="gs-hl gs-hl-${escapeAttr(level)}" title="${escapeAttr(label)}">${escapeHTML(safe.slice(range.start, range.end))}</mark>`;
+      cursor = range.end;
+    }
+    html += escapeHTML(safe.slice(cursor));
+    return html;
   }
 
   function currentDomainDisabled() {
@@ -357,7 +436,7 @@
     if (typeof example === "string") return `<div class="gs-example">${escapeHTML(example)}</div>`;
     return `
       <div class="gs-example">
-        <div class="gs-example-ja">${escapeHTML(example.ja || "-")}</div>
+        <div class="gs-example-ja">${escapeHTML(example.ja || "-")}${speakButton(example.ja)}</div>
         <div class="gs-example-romaji">${escapeHTML(example.romaji || "")}</div>
         <div class="gs-example-vi">${escapeHTML(example.vi || "")}</div>
         ${example.en ? `<div class="gs-example-en">${escapeHTML(example.en)}</div>` : ""}
@@ -457,7 +536,7 @@
       </div>
 
       <div class="gs-card-body">
-        <div class="gs-selected-text">${escapeHTML(truncate(selectedText, 180))}</div>
+        <div class="gs-selected-text">${renderHighlightedText(truncate(selectedText, 180), matches)}${speakButton(selectedText)}</div>
 
         <section class="gs-primary-panel ${hasResult ? "" : "gs-no-result"}">
           <div class="gs-primary-topline">
@@ -540,6 +619,15 @@
       event.stopPropagation();
       await openDetail(data, "card");
       setCardStatus(card, "Detail opened", "success");
+    });
+
+    card.addEventListener("click", (event) => {
+      const speakBtn = event.target.closest(".gs-speak-btn");
+      if (!speakBtn) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const ok = speakJapanese(speakBtn.dataset.speak);
+      if (!ok) setCardStatus(card, "Trình duyệt không hỗ trợ phát âm", "danger");
     });
 
     popupCard = card;

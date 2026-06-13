@@ -15,9 +15,90 @@ function escapeHTML(value) {
   return div.innerHTML;
 }
 
+function escapeAttr(value) {
+  return escapeHTML(value).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 function truncate(value, max) {
   const text = String(value || "");
   return text.length > max ? `${text.slice(0, max)}...` : text;
+}
+
+function containsJapanese(text) {
+  return /[぀-ヿ㐀-鿿]/u.test(text || "");
+}
+
+function speakJapanese(text) {
+  const synth = window.speechSynthesis;
+  if (!text || !synth) return false;
+  try {
+    synth.cancel();
+    const utterance = new SpeechSynthesisUtterance(String(text));
+    utterance.lang = "ja-JP";
+    utterance.rate = 0.9;
+    const voices = synth.getVoices() || [];
+    const jaVoice = voices.find((voice) => /ja(-|_)?JP/i.test(voice.lang) || /japanese/i.test(voice.name));
+    if (jaVoice) utterance.voice = jaVoice;
+    synth.speak(utterance);
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function speakButton(text) {
+  if (!text || !containsJapanese(text)) return "";
+  return `<button class="speak-btn" type="button" data-speak="${escapeAttr(text)}" title="Nghe phát âm" aria-label="Nghe phát âm">🔊</button>`;
+}
+
+function buildHighlightRanges(text, matches) {
+  const ranges = [];
+  const sorted = [...(matches || [])]
+    .filter((match) => match && (match.matchedText || match.detected))
+    .sort((a, b) => {
+      const lenA = (a.matchedText || a.detected || "").length;
+      const lenB = (b.matchedText || b.detected || "").length;
+      if (lenB !== lenA) return lenB - lenA;
+      return Number(b.confidence || 0) - Number(a.confidence || 0);
+    });
+
+  for (const match of sorted) {
+    const term = match.matchedText || match.detected;
+    if (!term) continue;
+    let from = 0;
+    let idx = text.indexOf(term, from);
+    while (idx >= 0) {
+      const start = idx;
+      const end = idx + term.length;
+      const overlaps = ranges.some((range) => start < range.end && end > range.start);
+      if (!overlaps) ranges.push({ start, end, match });
+      from = idx + Math.max(1, term.length);
+      idx = text.indexOf(term, from);
+    }
+  }
+
+  return ranges.sort((a, b) => a.start - b.start);
+}
+
+function renderHighlightedText(text, matches) {
+  const safe = String(text || "");
+  const ranges = buildHighlightRanges(safe, matches);
+  if (!ranges.length) return escapeHTML(safe);
+
+  let html = "";
+  let cursor = 0;
+  for (const range of ranges) {
+    if (range.start < cursor) continue;
+    html += escapeHTML(safe.slice(cursor, range.start));
+    const label = [range.match.display || range.match.grammar, range.match.jlpt_level]
+      .filter(Boolean)
+      .join(" · ");
+    const level = range.match.jlpt_level || "none";
+    html += `<mark class="hl hl-${escapeAttr(level)}" title="${escapeAttr(label)}">${escapeHTML(safe.slice(range.start, range.end))}</mark>`;
+    cursor = range.end;
+  }
+  html += escapeHTML(safe.slice(cursor));
+  return html;
 }
 
 function sendRuntimeMessage(message) {
@@ -147,7 +228,7 @@ function renderDetail() {
   els.detail.innerHTML = `
     <article class="detail-card">
       <div class="detail-main">
-        <div class="sentence">${escapeHTML(analysis.input || "")}</div>
+        <div class="sentence">${renderHighlightedText(analysis.input || "", matches)}${speakButton(analysis.input)}</div>
 
         <div class="topline">
           <div>
@@ -197,7 +278,7 @@ function renderDetail() {
         <div class="section">
           <div class="label">Ví dụ</div>
           <div class="example">
-            <strong>${escapeHTML(example.ja || "-")}</strong>
+            <strong>${escapeHTML(example.ja || "-")}</strong>${speakButton(example.ja)}
             ${example.romaji ? `<div class="muted">${escapeHTML(example.romaji)}</div>` : ""}
             ${example.vi ? `<div>${escapeHTML(example.vi)}</div>` : ""}
             ${example.en ? `<div class="muted">${escapeHTML(example.en)}</div>` : ""}
@@ -332,7 +413,7 @@ function renderReview() {
         </div>
         <span class="badge">${escapeHTML(item.jlpt_level || "-")}</span>
       </div>
-      <div class="sentence">${escapeHTML(item.sentence)}</div>
+      <div class="sentence">${escapeHTML(item.sentence)}${speakButton(item.sentence)}</div>
       <div class="section">
         <div class="label">Matched text</div>
         <div class="code-line">${escapeHTML(item.matchedText || "-")}</div>
@@ -448,6 +529,15 @@ async function init() {
     reloadReview: document.getElementById("reload-review"),
     reloadNotebook: document.getElementById("reload-notebook"),
     status: document.getElementById("status")
+  });
+
+  document.addEventListener("click", (event) => {
+    const speakBtn = event.target.closest(".speak-btn");
+    if (!speakBtn) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const ok = speakJapanese(speakBtn.dataset.speak);
+    if (!ok) showStatus("Trình duyệt không hỗ trợ phát âm");
   });
 
   els.refreshState.addEventListener("click", async () => {

@@ -235,6 +235,46 @@
   font-weight: 800;
 }
 
+/* Grammar highlight inside the analyzed sentence */
+.gs-hl {
+  padding: 0 2px;
+  border-radius: 4px;
+  background: #fde68a;
+  color: inherit;
+  box-shadow: inset 0 -2px 0 rgba(217, 119, 6, 0.55);
+}
+
+.gs-hl-N5 { background: #bbf7d0; box-shadow: inset 0 -2px 0 rgba(22, 163, 74, 0.55); }
+.gs-hl-N4 { background: #bae6fd; box-shadow: inset 0 -2px 0 rgba(2, 132, 199, 0.55); }
+.gs-hl-N3 { background: #fde68a; box-shadow: inset 0 -2px 0 rgba(217, 119, 6, 0.55); }
+.gs-hl-N2 { background: #fecaca; box-shadow: inset 0 -2px 0 rgba(220, 38, 38, 0.55); }
+.gs-hl-N1 { background: #e9d5ff; box-shadow: inset 0 -2px 0 rgba(147, 51, 234, 0.55); }
+
+/* Text-to-speech listen button */
+.gs-speak-btn {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+  opacity: 0.65;
+  vertical-align: middle;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.gs-speak-btn:hover {
+  opacity: 1;
+  transform: scale(1.12);
+}
+
+.gs-speak-btn:active {
+  transform: scale(0.96);
+}
+
 .gs-example-romaji,
 .gs-example-en,
 .gs-muted-line {
