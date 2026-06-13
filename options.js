@@ -209,6 +209,21 @@ function bindEvents() {
   els.clearHistory.addEventListener("click", clearHistory);
   els.clearNotebook.addEventListener("click", clearNotebook);
   els.resetSettings.addEventListener("click", resetSettings);
+  els.devSimulatePro.addEventListener("change", async () => {
+    const status = await sendRuntimeMessage({ type: "SET_PRO_STATUS_DEV", paid: els.devSimulatePro.checked });
+    reflectProStatus(status);
+    showStatus(status.paid ? "Pro simulated (testing)" : "Pro disabled");
+  });
+}
+
+function reflectProStatus(status) {
+  const paid = Boolean(status?.paid);
+  els.devSimulatePro.checked = paid;
+  els.proStatusLabel.textContent = paid ? "Pro (active)" : "Free";
+}
+
+async function loadProStatus() {
+  reflectProStatus(await sendRuntimeMessage({ type: "GET_PRO_STATUS" }));
 }
 
 async function init() {
@@ -225,13 +240,15 @@ async function init() {
     resetSettings: document.getElementById("reset-settings"),
     saveDomains: document.getElementById("save-domains"),
     saveSettings: document.getElementById("save-settings"),
+    devSimulatePro: document.getElementById("dev-simulate-pro"),
+    proStatusLabel: document.getElementById("pro-status-label"),
     status: document.getElementById("status")
   });
 
   bindEvents();
 
   try {
-    await Promise.all([loadSettings(), refreshStats()]);
+    await Promise.all([loadSettings(), refreshStats(), loadProStatus()]);
   } catch (error) {
     showStatus(error.message);
   }

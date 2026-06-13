@@ -8,6 +8,7 @@ let notebook = [];
 let stats = { total: 0, due: 0, new: 0, reviewed: 0, weak: 0 };
 let aiResult = null;
 let aiResultKey = "";
+let proStatus = { paid: false };
 
 function escapeHTML(value) {
   const div = document.createElement("div");
@@ -187,7 +188,31 @@ function notebookToAnki(items) {
   return `#separator:tab\n#html:true\n${notes.join("\n")}`;
 }
 
+async function promptUpgrade() {
+  try {
+    const offer = await sendRuntimeMessage({ type: "START_UPGRADE" });
+    showStatus(`🔒 Tính năng Pro ($${offer.priceUsd}). ${offer.message}`);
+  } catch (_error) {
+    showStatus("🔒 Export là tính năng Pro.");
+  }
+}
+
+function reflectProState() {
+  const locked = !proStatus.paid;
+  for (const button of [els.exportAnki, els.exportCsv]) {
+    if (!button) continue;
+    const base = button.dataset.label || button.textContent.replace(/\s*🔒$/, "");
+    button.dataset.label = base;
+    button.textContent = locked ? `${base} 🔒` : base;
+    button.title = locked ? `Tính năng Pro — nâng cấp để xuất` : button.title;
+  }
+}
+
 function exportNotebook(format) {
+  if (!proStatus.paid) {
+    promptUpgrade();
+    return;
+  }
   if (!notebook.length) {
     showStatus("Notebook trống — chưa có gì để xuất");
     return;
@@ -572,6 +597,11 @@ async function loadNotebook() {
   renderReview();
 }
 
+async function loadProStatus() {
+  proStatus = await sendRuntimeMessage({ type: "GET_PRO_STATUS" });
+  reflectProState();
+}
+
 async function reviewItem(id, rating) {
   await sendRuntimeMessage({ type: "REVIEW_NOTEBOOK_ITEM", id, rating });
   showStatus(`Reviewed: ${rating}`);
@@ -600,6 +630,8 @@ async function init() {
 
   els.exportAnki.addEventListener("click", () => exportNotebook("anki"));
   els.exportCsv.addEventListener("click", () => exportNotebook("csv"));
+
+  await loadProStatus();
 
   document.addEventListener("click", (event) => {
     const speakBtn = event.target.closest(".speak-btn");
@@ -666,6 +698,9 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
   if (changes.notebook) {
     loadNotebook().catch((error) => showStatus(error.message));
+  }
+  if (changes.proStatus) {
+    loadProStatus().catch((error) => showStatus(error.message));
   }
 });
 

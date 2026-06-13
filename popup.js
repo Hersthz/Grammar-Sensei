@@ -512,6 +512,7 @@ function bindEvents() {
   els.toggleDomain.addEventListener("click", toggleCurrentDomain);
   els.openSidePanel.addEventListener("click", () => openDetail());
   els.openOptions.addEventListener("click", () => chrome.runtime.openOptionsPage());
+  els.upgradePro.addEventListener("click", handleUpgrade);
 
   document.querySelectorAll("[data-setting]").forEach((input) => {
     input.addEventListener("change", () => updateSetting(input.dataset.setting, input.checked));
@@ -567,6 +568,10 @@ async function init() {
     openSidePanel: document.getElementById("open-side-panel"),
     openOptions: document.getElementById("open-options"),
     patternCount: document.getElementById("pattern-count"),
+    proPanel: document.getElementById("pro-panel"),
+    proState: document.getElementById("pro-state"),
+    proDesc: document.getElementById("pro-desc"),
+    upgradePro: document.getElementById("upgrade-pro"),
     scanList: document.getElementById("scan-list"),
     scanPage: document.getElementById("scan-page"),
     scanResult: document.getElementById("scan-result"),
@@ -582,9 +587,29 @@ async function init() {
 
   try {
     activeTab = await getActiveTab().catch(() => null);
-    await Promise.all([refreshSettings(), refreshSummary(), refreshHistory(), refreshNotebookStats()]);
+    await Promise.all([refreshSettings(), refreshSummary(), refreshHistory(), refreshNotebookStats(), refreshProStatus()]);
   } catch (error) {
     els.selectionHint.textContent = error.message;
+  }
+}
+
+async function refreshProStatus() {
+  const status = await sendRuntimeMessage({ type: "GET_PRO_STATUS" }).catch(() => ({ paid: false }));
+  const paid = Boolean(status?.paid);
+  els.proPanel.dataset.paid = String(paid);
+  els.proState.dataset.paid = String(paid);
+  els.proState.textContent = paid ? "Pro" : "Free";
+  els.proDesc.textContent = paid
+    ? "Cảm ơn bạn đã nâng cấp — đã mở khóa toàn bộ tính năng Pro."
+    : "Mở khóa Export Anki/CSV, quét trang không giới hạn và nhiều hơn — trả một lần $10.";
+}
+
+async function handleUpgrade() {
+  try {
+    const offer = await sendRuntimeMessage({ type: "START_UPGRADE" });
+    showToast(offer.message || "Đang mở trang nâng cấp...");
+  } catch (error) {
+    showToast(error.message);
   }
 }
 

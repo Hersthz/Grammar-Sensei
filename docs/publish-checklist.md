@@ -31,10 +31,12 @@ node --check onboarding.js
 node --check core/ai-provider.js
 node --check core/matcher.js
 node --check core/srs.js
+node --check core/pro.js
 node test-analyzer.js
 node test-ai-provider.js
 node test-nlp.js
 node test-srs.js
+node test-pro.js
 ```
 
 ## Manual QA
@@ -58,6 +60,9 @@ node test-srs.js
 - Options save settings.
 - Disable domain works.
 - Export/import JSON works.
+- Anki/CSV export is locked for Free users (shows upgrade prompt) and works after enabling Pro.
+- Options "Simulate Pro" toggle flips notebook export and the popup Pro badge between Free and Pro.
+- Free page scan caps at the free sentence limit; Pro scans up to the configured limit.
 - Clear history and clear notebook work.
 - AI mode Off does not call cloud.
 - AI mode Cloud without consent shows setup warning.

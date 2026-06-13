@@ -21,7 +21,8 @@ importScripts(
   "core/conjugation.js",
   "core/srs.js",
   "core/ai-provider.js",
-  "core/matcher.js"
+  "core/matcher.js",
+  "core/pro.js"
 );
 
 const EXTENSION_MENU_ID = "grammar-sensei-analyze-selection";
@@ -35,8 +36,30 @@ const DEFAULT_SETTINGS = GrammarSenseiCore.DEFAULT_SETTINGS;
 const Analyzer = GrammarSenseiCore.Analyzer;
 const AIProvider = GrammarSenseiCore.AIProvider;
 const SRS = GrammarSenseiCore.SRS;
+const Pro = GrammarSenseiCore.Pro;
+
+const PRO_STATUS_KEY = "proStatus";
 
 let migrationPromise = null;
+
+// Paid status lives in storage.local. For now it is set by the dev toggle or
+// import; ExtensionPay will write here once the payment account is connected.
+async function getProStatus() {
+  const { [PRO_STATUS_KEY]: status } = await chromeGet(chrome.storage.local, { [PRO_STATUS_KEY]: null });
+  return {
+    paid: Boolean(status?.paid),
+    source: status?.source || "none",
+    since: status?.since || ""
+  };
+}
+
+async function setProStatus(paid, source = "dev") {
+  const status = paid
+    ? { paid: true, source, since: nowIso() }
+    : { paid: false, source: "none", since: "" };
+  await chromeSet(chrome.storage.local, { [PRO_STATUS_KEY]: status });
+  return status;
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -488,7 +511,9 @@ async function handleMessage(request, sender) {
 
     case "ANALYZE_BATCH": {
       const settings = await getSettings();
-      const limit = Math.min(Number(request.limit || settings.scanLimit), settings.scanLimit);
+      const pro = await getProStatus();
+      const requested = Math.min(Number(request.limit || settings.scanLimit), settings.scanLimit);
+      const limit = Pro.effectiveScanLimit(requested, pro.paid);
       return Analyzer.analyzeBatch(request.sentences || [], {
         ...analysisOptions(settings, request.source || "scan"),
         limit
@@ -532,6 +557,23 @@ async function handleMessage(request, sender) {
 
     case "GET_GRAMMAR_SUMMARY":
       return Analyzer.getSummary();
+
+    case "GET_PRO_STATUS":
+      return getProStatus();
+
+    case "SET_PRO_STATUS_DEV":
+      // Testing-only switch to exercise gating before real payments exist.
+      return setProStatus(Boolean(request.paid), "dev");
+
+    case "START_UPGRADE":
+      // Placeholder until ExtensionPay is connected. Returns the offer so the
+      // UI can show it; swap this for extpay.openPaymentPage() later.
+      return {
+        ready: false,
+        priceUsd: Pro.PRICE_USD,
+        features: Pro.PRO_FEATURES,
+        message: "Thanh toán chưa được kết nối. Sẽ mở trang mua khi ExtensionPay sẵn sàng."
+      };
 
     case "SAVE_NOTEBOOK_ITEM":
       return saveNotebookItem(request.item || request);
