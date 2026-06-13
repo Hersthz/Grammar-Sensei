@@ -8,6 +8,49 @@
   const DEFAULT_AI_TIMEOUT_MS = 12000;
   const MAX_SENTENCE_LENGTH = 1200;
 
+  // JSON Schema used as a responseConstraint for the on-device Prompt API so
+  // Gemini Nano returns structured grammar analysis instead of free text.
+  const BROWSER_RESPONSE_SCHEMA = {
+    type: "object",
+    properties: {
+      detectedLanguage: { type: "string", enum: ["ja", "vi", "en", "mixed", "unknown"] },
+      japaneseEquivalent: { type: "string" },
+      matches: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            pattern: { type: "string" },
+            grammarId: { type: "string" },
+            matchedText: { type: "string" },
+            jlptLevel: { type: "string" },
+            meaningVi: { type: "string" },
+            meaningEn: { type: "string" },
+            structure: { type: "string" },
+            explanationVi: { type: "string" },
+            confidence: { type: "number" },
+            whyMatched: { type: "string" },
+            possibleConfusions: { type: "array", items: { type: "string" } }
+          },
+          required: ["pattern", "explanationVi", "confidence"]
+        }
+      },
+      warning: { type: "string" }
+    },
+    required: ["detectedLanguage", "matches"]
+  };
+
+  const BROWSER_SYSTEM_INSTRUCTION = [
+    "You are Grammar Sensei, a Japanese grammar tutor for Vietnamese learners.",
+    "You can read Japanese, Vietnamese, and English input.",
+    "Task: detect the grammar patterns in the input and explain them in Vietnamese.",
+    "If the input is Japanese, identify the actual grammar patterns present in the sentence.",
+    "If the input is Vietnamese or English, infer the meaning and return the equivalent Japanese grammar pattern(s) a learner would use, and fill japaneseEquivalent with a natural Japanese sentence.",
+    "Prefer grammarId values from the provided candidate list when one fits; otherwise leave grammarId empty but still fill pattern.",
+    "Always answer with confidence between 0 and 1. Use low confidence when unsure rather than refusing.",
+    "Return JSON only, matching the requested schema."
+  ].join("\n");
+
   const AI_RESPONSE_SCHEMA = {
     detectedLanguage: "ja|vi|en|mixed|unknown",
     originalSentence: "string",
@@ -141,6 +184,57 @@
       "Input:",
       String(input || "")
     ].join("\n");
+  }
+
+  function buildBrowserUserPrompt(input, context = {}) {
+    const candidates = candidateEntries(context.grammarEntries, context.localResult, 30);
+    const candidateList = candidates
+      .map((entry) => `${entry.id}: ${entry.pattern} (${entry.jlpt_level}) - ${entry.meaning_vi}`)
+      .join("\n");
+    const local = compactLocalResult(context.localResult);
+    const localHint = local?.primary
+      ? `Local detector best guess: ${local.primary.display || local.primary.grammar} (${local.primary.jlpt_level}).`
+      : "Local detector found no confident match.";
+
+    return [
+      `Detected language (heuristic): ${context.detectedLanguage || local?.detectedLanguage || "unknown"}.`,
+      localHint,
+      "",
+      "Candidate grammar database (id: pattern (level) - meaning):",
+      candidateList || "(none)",
+      "",
+      "Analyze this input and return JSON only:",
+      safeString(input, MAX_SENTENCE_LENGTH)
+    ].join("\n");
+  }
+
+  function safeParseJson(raw) {
+    if (raw && typeof raw === "object") return raw;
+    let text = String(raw || "").trim();
+    if (!text) return null;
+    // Strip markdown code fences if the model wrapped the JSON.
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenced) text = fenced[1].trim();
+    try {
+      return JSON.parse(text);
+    } catch (_error) {
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+      if (start >= 0 && end > start) {
+        try {
+          return JSON.parse(text.slice(start, end + 1));
+        } catch (_innerError) {
+          return null;
+        }
+      }
+      return null;
+    }
+  }
+
+  function getLanguageModelApi() {
+    // Modern Chrome exposes the global `LanguageModel`; older builds used
+    // `self.ai.languageModel`. Support both shapes.
+    return global.LanguageModel || global.ai?.languageModel || null;
   }
 
   function normalizeCloudEndpoint(value) {
@@ -290,23 +384,117 @@
       this.name = "browser";
     }
 
-    async analyze(input, context) {
-      const promptApi = global.ai?.languageModel || global.LanguageModel;
-      if (!promptApi) {
+    async analyze(input, context = {}) {
+      const sentence = safeString(input, MAX_SENTENCE_LENGTH);
+      if (!sentence) {
+        return { available: false, mode: "browser", warning: "Không có nội dung để phân tích.", matches: [] };
+      }
+
+      const api = getLanguageModelApi();
+      if (!api || typeof api.create !== "function") {
         return {
           available: false,
           mode: "browser",
-          warning: "Browser AI is not available in this Chrome profile.",
-          prompt: buildStrictPrompt(input, context.grammarEntries || [], context)
+          warning: "On-device AI (Prompt API) chưa khả dụng trong Chrome này. Cần Chrome 138+ và bật AI trên thiết bị.",
+          matches: []
         };
       }
 
-      return {
-        available: false,
-        mode: "browser",
-        warning: "Browser AI provider is prepared but not enabled for production yet.",
-        prompt: buildStrictPrompt(input, context.grammarEntries || [], context)
-      };
+      let availability = "available";
+      try {
+        if (typeof api.availability === "function") {
+          availability = await api.availability();
+        } else if (typeof api.capabilities === "function") {
+          // Legacy ai.languageModel.capabilities() → { available: "readily"|"after-download"|"no" }
+          const caps = await api.capabilities();
+          availability = caps?.available === "readily" ? "available"
+            : caps?.available === "after-download" ? "downloadable"
+            : "unavailable";
+        }
+      } catch (_error) {
+        availability = "unavailable";
+      }
+
+      if (availability === "unavailable") {
+        return {
+          available: false,
+          mode: "browser",
+          warning: "Thiết bị này không hỗ trợ on-device AI (Gemini Nano).",
+          matches: []
+        };
+      }
+
+      if (availability === "downloadable" || availability === "downloading") {
+        // Kick off the model download without blocking the user's request.
+        try {
+          Promise.resolve(api.create({
+            monitor(monitor) {
+              monitor.addEventListener?.("downloadprogress", () => {});
+            }
+          })).then((session) => session?.destroy?.()).catch(() => {});
+        } catch (_error) {}
+        return {
+          available: false,
+          mode: "browser",
+          downloading: true,
+          warning: "Mô hình AI trên thiết bị (Gemini Nano) đang tải xuống. Hãy bấm Ask AI lại sau ít phút.",
+          matches: []
+        };
+      }
+
+      let session = null;
+      const timeoutMs = clampNumber(context.aiTimeoutMs, 3000, 30000, DEFAULT_AI_TIMEOUT_MS);
+      const controller = typeof global.AbortController === "function" ? new global.AbortController() : null;
+      const timer = controller ? global.setTimeout(() => controller.abort(), timeoutMs) : null;
+
+      try {
+        session = await api.create({
+          ...(controller ? { signal: controller.signal } : {}),
+          initialPrompts: [{ role: "system", content: BROWSER_SYSTEM_INSTRUCTION }]
+        });
+
+        const userPrompt = buildBrowserUserPrompt(sentence, context);
+        const promptOptions = { responseConstraint: BROWSER_RESPONSE_SCHEMA };
+        if (controller) promptOptions.signal = controller.signal;
+
+        let raw;
+        try {
+          raw = await session.prompt(userPrompt, promptOptions);
+        } catch (_constraintError) {
+          // Some builds reject unknown options; retry without the constraint.
+          raw = await session.prompt(userPrompt, controller ? { signal: controller.signal } : undefined);
+        }
+
+        const parsed = safeParseJson(raw);
+        if (!parsed) {
+          return {
+            available: false,
+            mode: "browser",
+            warning: "On-device AI trả về dữ liệu không đọc được. Hãy thử lại.",
+            matches: []
+          };
+        }
+
+        const data = normalizeAIResponse(parsed, sentence);
+        return {
+          available: true,
+          mode: "browser",
+          onDevice: true,
+          ...data,
+          provider: "browser"
+        };
+      } catch (error) {
+        const aborted = error?.name === "AbortError";
+        return {
+          available: false,
+          mode: "browser",
+          warning: aborted ? "On-device AI quá thời gian chờ." : `Lỗi on-device AI: ${error?.message || error}`,
+          matches: []
+        };
+      } finally {
+        if (timer) global.clearTimeout(timer);
+        try { session?.destroy?.(); } catch (_error) {}
+      }
     }
   }
 
@@ -361,12 +549,15 @@
 
   Core.AIProvider = {
     AI_RESPONSE_SCHEMA,
+    BROWSER_RESPONSE_SCHEMA,
     CLOUD_SCHEMA_VERSION,
     DEFAULT_AI_TIMEOUT_MS,
     buildStrictPrompt,
+    buildBrowserUserPrompt,
     buildBackendPayload,
     normalizeCloudEndpoint,
     normalizeAIResponse,
+    safeParseJson,
     NoAIProvider,
     BrowserAIProvider,
     CloudAIProvider,

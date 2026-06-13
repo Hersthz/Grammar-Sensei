@@ -2,7 +2,7 @@
  * Grammar Sensei - toolbar popup
  */
 
-const DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS = globalThis.GRAMMAR_SENSEI_DEFAULT_SETTINGS || {
   enabled: true,
   floatingButton: true,
   autoAnalyze: false,
@@ -188,6 +188,9 @@ function renderSettings() {
   els.statusPill.dataset.enabled = String(Boolean(settings.enabled));
   els.statusText.textContent = settings.enabled ? "On" : "Off";
   els.aiWarning.dataset.visible = String(settings.aiMode !== "off");
+  els.aiWarning.textContent = settings.aiMode === "browser"
+    ? "On-device AI (Gemini Nano) runs locally in Chrome. Nothing is sent over the network. First use may download the model."
+    : "Cloud AI sends only the current sentence and compact local result to the backend endpoint configured in Options.";
   els.toggleDomain.textContent = isCurrentDomainDisabled() ? "Enable This Domain" : "Disable This Domain";
 }
 

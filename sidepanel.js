@@ -37,7 +37,24 @@ function sendRuntimeMessage(message) {
 }
 
 async function copyText(text) {
-  await navigator.clipboard.writeText(text);
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (_error) {}
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const ok = document.execCommand("copy");
+  textarea.remove();
+  if (!ok) throw new Error("Clipboard is not available.");
+  return true;
 }
 
 function formatSummary(analysis) {
@@ -472,5 +489,17 @@ async function init() {
     showStatus(error.message);
   }
 }
+
+// Keep the panel live: react to new analyses and notebook changes without a
+// manual Refresh click.
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "local") return;
+  if (changes.sidePanelState) {
+    loadState().catch((error) => showStatus(error.message));
+  }
+  if (changes.notebook) {
+    loadNotebook().catch((error) => showStatus(error.message));
+  }
+});
 
 document.addEventListener("DOMContentLoaded", init);

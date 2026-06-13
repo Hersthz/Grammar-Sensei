@@ -8,7 +8,7 @@
 (() => {
   "use strict";
 
-  const DEFAULT_SETTINGS = {
+  const DEFAULT_SETTINGS = globalThis.GRAMMAR_SENSEI_DEFAULT_SETTINGS || {
     enabled: true,
     floatingButton: true,
     autoAnalyze: false,
@@ -745,7 +745,7 @@
         <button class="gs-scan-panel-close" type="button" title="Close" aria-label="Close">&times;</button>
       </div>
       <div class="gs-scan-panel-body">
-        ${results.length ? results.slice(0, 15).map(renderScanPanelItem).join("") : `
+        ${results.length ? results.map(renderScanPanelItem).join("") : `
           <div class="gs-scan-panel-empty">
             <div>Không tìm thấy câu tiếng Nhật đang hiển thị.</div>
             <small>Thử cuộn đến phần có nội dung Nhật rồi scan lại.</small>
@@ -754,7 +754,7 @@
       </div>
       <div class="gs-scan-panel-footer">
         <span>Alt+Shift+G scan lại · giữ Shift để scan câu dưới chuột</span>
-        <span>${results.length > 15 ? `Showing 15/${results.length}` : "Local-only"}</span>
+        <span>${results.length ? `${results.length} câu · Local-only` : "Local-only"}</span>
       </div>
     `;
 

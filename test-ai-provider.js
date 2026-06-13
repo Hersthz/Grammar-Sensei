@@ -135,6 +135,80 @@ const grammarEntries = context.GrammarSenseiData.GRAMMAR_DATABASE;
   assert(capturedFetch.body.allowedGrammarIds.includes("ta-koto-ga-aru"));
   assert(capturedFetch.body.grammarCandidates.length > 0);
 
+  // --- Browser (on-device Prompt API) provider ---
+
+  // 1. No API available → graceful unavailable.
+  delete context.LanguageModel;
+  const noApi = await new AIProvider.BrowserAIProvider().analyze("テストです。", { grammarEntries });
+  assert.strictEqual(noApi.available, false);
+  assert.strictEqual(noApi.mode, "browser");
+
+  // 2. Model needs download → downloading flag, no blocking.
+  context.LanguageModel = {
+    availability: async () => "downloadable",
+    create: async () => ({ prompt: async () => "{}", destroy() {} })
+  };
+  const downloading = await new AIProvider.BrowserAIProvider().analyze("テストです。", { grammarEntries });
+  assert.strictEqual(downloading.available, false);
+  assert.strictEqual(downloading.downloading, true);
+
+  // 3. Model available → returns normalized matches from structured JSON.
+  let capturedConstraint = null;
+  context.LanguageModel = {
+    availability: async () => "available",
+    create: async (opts) => {
+      assert(Array.isArray(opts.initialPrompts) && opts.initialPrompts[0].role === "system");
+      return {
+        prompt: async (text, options) => {
+          capturedConstraint = options?.responseConstraint || null;
+          return JSON.stringify({
+            detectedLanguage: "ja",
+            japaneseEquivalent: "",
+            matches: [
+              {
+                pattern: "〜たことがある",
+                grammarId: "ta-koto-ga-aru",
+                matchedText: "行ったことがあります",
+                jlptLevel: "N4",
+                meaningVi: "đã từng làm gì",
+                structure: "Vた + ことがある",
+                explanationVi: "Diễn tả trải nghiệm trong quá khứ.",
+                confidence: 0.9,
+                whyMatched: "た + ことがあります",
+                possibleConfusions: ["ことができる"]
+              }
+            ],
+            warning: ""
+          });
+        },
+        destroy() {}
+      };
+    }
+  };
+  const onDevice = await new AIProvider.BrowserAIProvider().analyze("日本に行ったことがあります。", {
+    grammarEntries,
+    detectedLanguage: "ja",
+    aiTimeoutMs: 5000
+  });
+  assert.strictEqual(onDevice.available, true);
+  assert.strictEqual(onDevice.mode, "browser");
+  assert.strictEqual(onDevice.onDevice, true);
+  assert.strictEqual(onDevice.matches[0].grammarId, "ta-koto-ga-aru");
+  assert.strictEqual(onDevice.matches[0].jlptLevel, "N4");
+  assert(capturedConstraint && capturedConstraint.type === "object");
+
+  // 4. Model returns fenced / messy JSON → safeParseJson recovers it.
+  context.LanguageModel = {
+    availability: async () => "available",
+    create: async () => ({
+      prompt: async () => "```json\n{\"detectedLanguage\":\"vi\",\"matches\":[{\"pattern\":\"〜たい\",\"explanationVi\":\"muốn làm gì\",\"confidence\":0.7}]}\n```",
+      destroy() {}
+    })
+  };
+  const fenced = await new AIProvider.BrowserAIProvider().analyze("tôi muốn ăn", { grammarEntries });
+  assert.strictEqual(fenced.available, true);
+  assert.strictEqual(fenced.matches[0].pattern, "〜たい");
+
   console.log("AI provider tests passed.");
 })().catch((error) => {
   console.error(error);

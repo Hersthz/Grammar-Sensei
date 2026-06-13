@@ -6,6 +6,7 @@
  */
 
 importScripts(
+  "core/defaults.js",
   "data/grammar-database.js",
   "data/grammar-phase4-pack.js",
   "data/grammar-phase8-pack.js",
@@ -26,30 +27,7 @@ const NOTEBOOK_LIMIT = 300;
 const STORAGE_SCHEMA_VERSION = 4;
 const SIDE_PANEL_STATE_KEY = "sidePanelState";
 
-const DEFAULT_SETTINGS = {
-  enabled: true,
-  floatingButton: true,
-  autoAnalyze: false,
-  saveHistory: true,
-  compactMode: false,
-  showMatchList: true,
-  hoverEnabled: false,
-  hoverDelayMs: 400,
-  shiftScanEnabled: true,
-  shiftScanDelayMs: 250,
-  keyboardScanEnabled: true,
-  scanLimit: 50,
-  confidenceThreshold: 70,
-  semanticMode: true,
-  debugMatches: false,
-  aiMode: "off",
-  cloudEndpoint: "",
-  aiConsentAccepted: false,
-  aiStrictMode: true,
-  aiTimeoutMs: 12000,
-  uiLanguage: "vi",
-  disabledDomains: []
-};
+const DEFAULT_SETTINGS = GrammarSenseiCore.DEFAULT_SETTINGS;
 
 const Analyzer = GrammarSenseiCore.Analyzer;
 const AIProvider = GrammarSenseiCore.AIProvider;

@@ -2,7 +2,7 @@
  * Grammar Sensei - options page
  */
 
-const DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS = globalThis.GRAMMAR_SENSEI_DEFAULT_SETTINGS || {
   enabled: true,
   floatingButton: true,
   autoAnalyze: false,

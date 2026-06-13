@@ -344,6 +344,17 @@
     return result;
   }
 
+  function dedupeMatchesById(matches) {
+    const seen = new Set();
+    const result = [];
+    for (const match of matches) {
+      if (seen.has(match.id)) continue;
+      seen.add(match.id);
+      result.push(match);
+    }
+    return result;
+  }
+
   function analyzeSemanticInput(input, normalized, detectedLanguage, source, settings) {
     const lower = normalized.toLocaleLowerCase("vi");
     const matches = semanticEntries()
@@ -383,7 +394,9 @@
       .filter(Boolean)
       .sort(sortMatches);
 
-    if (!matches.length) {
+    const dedupedMatches = dedupeMatchesById(matches);
+
+    if (!dedupedMatches.length) {
       return {
         input,
         normalized_input: normalized,
@@ -406,14 +419,14 @@
       };
     }
 
-    const primary = matches[0];
+    const primary = dedupedMatches[0];
     return {
       input,
       normalized_input: normalized,
       detectedLanguage,
       source,
       primary,
-      matches,
+      matches: dedupedMatches,
       suggestions: ["Đây là gợi ý mẫu tương đương khi chuyển ý sang tiếng Nhật, không phải match trực tiếp."],
       romaji: "",
       romajiQuality: Romaji.romajiQuality,
@@ -425,8 +438,8 @@
       example: primary.exampleText || primary.example?.ja || "-",
       jlpt_level: primary.jlpt_level,
       confidence: primary.confidence,
-      tags: unique(matches.flatMap((match) => match.tags)),
-      all_matches: matches.map((match) => match.display)
+      tags: unique(dedupedMatches.flatMap((match) => match.tags)),
+      all_matches: dedupedMatches.map((match) => match.display)
     };
   }
 

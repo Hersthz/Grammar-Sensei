@@ -142,6 +142,265 @@
       enKeywords: ["plan to", "intend to", "going to"],
       intent: "intention",
       confidence: 72
+    },
+    {
+      grammarId: "te-hoshii",
+      viKeywords: ["muốn ai đó", "mong ai đó", "muốn người khác"],
+      enKeywords: ["want someone to", "want you to", "wish someone would"],
+      intent: "want_other_action",
+      confidence: 72
+    },
+    {
+      grammarId: "te-miru",
+      viKeywords: ["thử", "thử làm", "làm thử"],
+      enKeywords: ["try doing", "give it a try", "attempt to"],
+      intent: "try_action",
+      confidence: 72
+    },
+    {
+      grammarId: "te-oku",
+      viKeywords: ["làm trước", "chuẩn bị sẵn", "để sẵn"],
+      enKeywords: ["do in advance", "do beforehand", "prepare ahead"],
+      intent: "do_in_advance",
+      confidence: 74
+    },
+    {
+      grammarId: "te-ageru",
+      viKeywords: ["làm cho ai", "làm giúp ai", "giúp ai đó"],
+      enKeywords: ["do for someone", "do a favor for"],
+      intent: "do_for_other",
+      confidence: 68
+    },
+    {
+      grammarId: "te-morau",
+      viKeywords: ["được ai làm cho", "nhờ ai làm"],
+      enKeywords: ["have someone do", "get someone to do"],
+      intent: "receive_favor",
+      confidence: 70
+    },
+    {
+      grammarId: "te-kara",
+      viKeywords: ["sau khi làm xong", "làm xong rồi mới"],
+      enKeywords: ["after doing", "once done then"],
+      intent: "after_action",
+      confidence: 70
+    },
+    {
+      grammarId: "mae-ni",
+      viKeywords: ["trước khi"],
+      enKeywords: ["before doing", "prior to"],
+      intent: "before_action",
+      confidence: 72
+    },
+    {
+      grammarId: "ato-de",
+      viKeywords: ["sau đó", "lát nữa", "để sau"],
+      enKeywords: ["afterwards", "later on"],
+      intent: "later",
+      confidence: 66
+    },
+    {
+      grammarId: "nagara",
+      viKeywords: ["vừa làm vừa", "vừa ... vừa", "đồng thời"],
+      enKeywords: ["while doing", "at the same time as"],
+      intent: "simultaneous",
+      confidence: 74
+    },
+    {
+      grammarId: "kara",
+      viKeywords: ["vì", "bởi vì", "tại vì"],
+      enKeywords: ["because", "since"],
+      intent: "reason_casual",
+      confidence: 64
+    },
+    {
+      grammarId: "node",
+      viKeywords: ["do là", "bởi lẽ", "chính vì"],
+      enKeywords: ["due to the fact", "owing to"],
+      intent: "reason_polite",
+      confidence: 64
+    },
+    {
+      grammarId: "keredo",
+      viKeywords: ["nhưng", "tuy nhiên", "thế nhưng"],
+      enKeywords: ["but", "however", "though"],
+      intent: "contrast",
+      confidence: 64
+    },
+    {
+      grammarId: "noni",
+      viKeywords: ["mặc dù mà", "vậy mà", "thế mà lại"],
+      enKeywords: ["even though", "despite the fact that"],
+      intent: "unexpected_contrast",
+      confidence: 70
+    },
+    {
+      grammarId: "yasui",
+      viKeywords: ["dễ làm", "dễ dàng để", "dễ mà"],
+      enKeywords: ["easy to do", "easy to"],
+      intent: "easy_to",
+      confidence: 70
+    },
+    {
+      grammarId: "nikui",
+      viKeywords: ["khó làm", "khó mà", "khó để"],
+      enKeywords: ["hard to do", "difficult to"],
+      intent: "hard_to",
+      confidence: 70
+    },
+    {
+      grammarId: "sugiru",
+      viKeywords: ["quá mức", "quá đỗi", "quá nhiều"],
+      enKeywords: ["too much", "excessively", "overly"],
+      intent: "excessive",
+      confidence: 70
+    },
+    {
+      grammarId: "hoshii",
+      viKeywords: ["muốn có", "thèm", "muốn một"],
+      enKeywords: ["want something", "would like a"],
+      intent: "want_object",
+      confidence: 68
+    },
+    {
+      grammarId: "no-ga-jouzu",
+      viKeywords: ["giỏi", "khéo", "thành thạo"],
+      enKeywords: ["good at", "skilled at"],
+      intent: "good_at",
+      confidence: 70
+    },
+    {
+      grammarId: "no-ga-heta",
+      viKeywords: ["dở", "kém ở", "vụng về"],
+      enKeywords: ["bad at", "poor at"],
+      intent: "bad_at",
+      confidence: 70
+    },
+    {
+      grammarId: "no-ga-suki",
+      viKeywords: ["thích làm", "ưa thích việc"],
+      enKeywords: ["like doing", "enjoy doing"],
+      intent: "like_doing",
+      confidence: 68
+    },
+    {
+      grammarId: "dake",
+      viKeywords: ["chỉ có", "duy nhất", "chỉ mỗi"],
+      enKeywords: ["only", "just", "merely"],
+      intent: "only_limit",
+      confidence: 66
+    },
+    {
+      grammarId: "shika-nai",
+      viKeywords: ["chỉ ... thôi", "không gì ngoài", "chẳng còn gì khác"],
+      enKeywords: ["nothing but", "only have"],
+      intent: "only_negative",
+      confidence: 70
+    },
+    {
+      grammarId: "ni-tsuite",
+      viKeywords: ["về việc", "liên quan tới", "nói về chuyện"],
+      enKeywords: ["about", "concerning", "regarding"],
+      intent: "about_topic",
+      confidence: 70
+    },
+    {
+      grammarId: "ni-yotte",
+      viKeywords: ["bằng cách", "nhờ vào", "tùy vào"],
+      enKeywords: ["by means of", "depending on", "by"],
+      intent: "by_means",
+      confidence: 70
+    },
+    {
+      grammarId: "hodo",
+      viKeywords: ["đến mức", "tới mức mà"],
+      enKeywords: ["to the extent that", "so much that"],
+      intent: "extent",
+      confidence: 70
+    },
+    {
+      grammarId: "kurai-gurai",
+      viKeywords: ["khoảng", "tầm", "cỡ chừng"],
+      enKeywords: ["approximately", "about", "around"],
+      intent: "approx",
+      confidence: 64
+    },
+    {
+      grammarId: "uchi-ni",
+      viKeywords: ["nhân lúc", "trong lúc còn", "trước khi mất"],
+      enKeywords: ["while still", "before it changes"],
+      intent: "while_still",
+      confidence: 72
+    },
+    {
+      grammarId: "aida-ni",
+      viKeywords: ["trong khoảng thời gian", "suốt trong lúc"],
+      enKeywords: ["during the time", "while"],
+      intent: "during_period",
+      confidence: 70
+    },
+    {
+      grammarId: "you-to-suru",
+      viKeywords: ["định làm", "toan làm", "sắp sửa"],
+      enKeywords: ["about to", "try to do"],
+      intent: "about_to",
+      confidence: 70
+    },
+    {
+      grammarId: "you-ni-purpose",
+      viKeywords: ["để mà", "sao cho", "để có thể"],
+      enKeywords: ["so that", "in order to be able to"],
+      intent: "purpose_potential",
+      confidence: 70
+    },
+    {
+      grammarId: "to-iu",
+      viKeywords: ["gọi là", "được gọi là", "tên là"],
+      enKeywords: ["called", "named", "known as"],
+      intent: "naming",
+      confidence: 64
+    },
+    {
+      grammarId: "sou-da",
+      viKeywords: ["nghe nói", "nghe đồn", "người ta nói rằng"],
+      enKeywords: ["I heard that", "they say", "reportedly"],
+      intent: "hearsay",
+      confidence: 70
+    },
+    {
+      grammarId: "rashii",
+      viKeywords: ["hình như", "nghe chừng", "có vẻ như là"],
+      enKeywords: ["apparently", "it seems that"],
+      intent: "apparent_hearsay",
+      confidence: 68
+    },
+    {
+      grammarId: "you-da",
+      viKeywords: ["dường như", "trông như là", "có lẽ là"],
+      enKeywords: ["it seems", "it appears", "looks as if"],
+      intent: "seeming",
+      confidence: 68
+    },
+    {
+      grammarId: "mitai",
+      viKeywords: ["giống như", "trông giống", "kiểu như"],
+      enKeywords: ["looks like", "similar to", "just like"],
+      intent: "resemblance",
+      confidence: 66
+    },
+    {
+      grammarId: "koto-ni-suru",
+      viKeywords: ["quyết định làm", "đã quyết định"],
+      enKeywords: ["decide to", "have decided to"],
+      intent: "decision",
+      confidence: 72
+    },
+    {
+      grammarId: "koto-ni-naru",
+      viKeywords: ["được quyết định", "hóa ra sẽ", "rốt cuộc thành"],
+      enKeywords: ["it has been decided", "it turns out that"],
+      intent: "decided_outcome",
+      confidence: 70
     }
   ];
 
