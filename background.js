@@ -19,7 +19,6 @@ importScripts(
   "data/semantic-n1.js",
   "core/normalize.js",
   "core/romaji.js",
-  "core/tokenizer.js",
   "core/conjugation.js",
   "core/srs.js",
   "core/ai-provider.js",
@@ -180,9 +179,6 @@ function analyzeGrammar(text, source, settings) {
   return Analyzer.analyzeText(text, analysisOptions(settings, source));
 }
 
-// High-frequency / background sources never trigger automatic AI so the
-// on-device model is not spammed (hover fires constantly, scan is per-batch).
-const AI_FALLBACK_BLOCKED_SOURCES = new Set(["hover", "auto-selection", "scan", "shift-scan", "scan-batch"]);
 
 function buildAiContext(text, localResult, source, settings) {
   return {
@@ -208,11 +204,18 @@ function buildAiContext(text, localResult, source, settings) {
 // itself returns available:false otherwise, so this stays a no-op until then).
 // High-frequency sources (hover/scan) are still blocked to avoid spamming the
 // model. Returns an analysis-shaped object or null.
-async function maybeAiFallback(text, localResult, source, settings) {
+async function maybeAiFallback(text, localResult, source, settings, force = false) {
   if (!text) return null;
-  if (settings.aiMode === "off" || !settings.autoAiFallback) return null;
-  if (localResult?.primary) return null;
-  if (AI_FALLBACK_BLOCKED_SOURCES.has(source)) return null;
+  // `force` is set by an explicit user "Ask AI" gesture: it bypasses the
+  // auto-fallback toggle and the high-frequency source block, but still cannot
+  // run when AI mode is off or a confident local match already exists.
+  if (!AIProvider.shouldAutoFallback({
+    aiMode: settings.aiMode,
+    autoAiFallback: settings.autoAiFallback,
+    hasPrimary: Boolean(localResult?.primary),
+    source,
+    force
+  })) return null;
 
   try {
     const provider = AIProvider.createAIProvider(settings.aiMode);
@@ -499,7 +502,7 @@ async function handleMessage(request, sender) {
       const localAnalysis = analyzeGrammar(request.text, source, settings);
       const fallback = request.allowAiFallback === false
         ? null
-        : await maybeAiFallback(request.text, localAnalysis, source, settings);
+        : await maybeAiFallback(request.text, localAnalysis, source, settings, request.forceAi === true);
       const analysis = fallback || localAnalysis;
       if (request.saveHistory !== false) {
         await saveHistoryEntry(request.text, analysis, source);

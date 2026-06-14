@@ -595,6 +595,13 @@
         ${renderMatchList(matches)}
         ${renderSuggestions(data)}
 
+        ${(!hasResult && !data.aiGenerated) ? `
+          <div class="gs-ai-cta">
+            <button class="gs-ai-ask-btn" type="button">🤖 Hỏi AI phân tích câu này</button>
+            <div class="gs-ai-cta-hint">${settings.aiMode === "off" ? "Cần bật AI trong cài đặt" : "AI trên thiết bị, không gửi gì lên mạng"}</div>
+          </div>
+        ` : ""}
+
         <div class="gs-card-footer">
           <span>${settings.saveHistory && hasResult ? "Đã lưu vào history" : "Local-only"}</span>
           <span class="gs-card-status" aria-live="polite"></span>
@@ -629,6 +636,39 @@
       const ok = speakJapanese(speakBtn.dataset.speak);
       if (!ok) setCardStatus(card, "Trình duyệt không hỗ trợ phát âm", "danger");
     });
+
+    const askAiBtn = card.querySelector(".gs-ai-ask-btn");
+    if (askAiBtn) {
+      askAiBtn.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        if (settings.aiMode === "off") {
+          setCardStatus(card, "Hãy bật AI (Browser / Cloud) trong cài đặt rồi thử lại.", "danger");
+          return;
+        }
+        askAiBtn.disabled = true;
+        setCardStatus(card, "Đang hỏi AI...", "neutral");
+        try {
+          const aiData = await sendRuntimeMessage({
+            type: "ANALYZE_GRAMMAR",
+            text: selectedText,
+            source: "manual-ai",
+            forceAi: true,
+            saveHistory: settings.saveHistory,
+            pageUrl: location.href,
+            pageTitle: document.title
+          });
+          if (aiData?.primary) {
+            showPopupCard(x, y, selectedText, aiData);
+          } else {
+            askAiBtn.disabled = false;
+            setCardStatus(card, "AI chưa tìm được mẫu phù hợp (có thể model đang tải hoặc không khả dụng).", "danger");
+          }
+        } catch (error) {
+          askAiBtn.disabled = false;
+          setCardStatus(card, error.message, "danger");
+        }
+      });
+    }
 
     popupCard = card;
   }

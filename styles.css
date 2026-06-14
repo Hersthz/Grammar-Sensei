@@ -362,6 +362,45 @@
   margin-bottom: 4px;
 }
 
+.gs-ai-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.gs-ai-ask-btn {
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.05s ease;
+}
+
+.gs-ai-ask-btn:hover {
+  opacity: 0.92;
+}
+
+.gs-ai-ask-btn:active {
+  transform: translateY(1px);
+}
+
+.gs-ai-ask-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.gs-ai-cta-hint {
+  font-size: 11px;
+  color: #78716c;
+}
+
 .gs-card-footer {
   display: flex;
   justify-content: space-between;

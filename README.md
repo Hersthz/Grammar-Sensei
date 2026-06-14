@@ -20,7 +20,7 @@ The project is still plain JavaScript/HTML/CSS with no build step.
 - Options page for advanced settings, disabled domains, export/import, reset, and data clearing.
 - Stronger confidence threshold behavior to reduce broad false positives like standalone polite endings in full sentences.
 - Local grammar engine with 220+ JLPT N5-N1 patterns.
-- Lightweight tokenizer and conjugation/context helpers for better matched phrases.
+- Lightweight conjugation/context helpers for better matched phrases.
 - Vietnamese-first grammar data with English kept as secondary context.
 - Basic kana-only romaji helper; kanji readings are not guessed.
 - Settings and history via Chrome storage.
@@ -76,7 +76,6 @@ GRAMMAR-SENSEI/
   core/
     normalize.js
     romaji.js
-    tokenizer.js
     conjugation.js
     srs.js
     matcher.js
@@ -230,11 +229,10 @@ Semantic Vietnamese/English intent mappings are also organized by level: `data/s
 
 ## Local NLP Layer
 
-Phase 4 adds a small no-dependency NLP layer:
+A small no-dependency NLP layer supports matching:
 
-- `core/tokenizer.js` splits Japanese text into lightweight tokens, particles, punctuation, and grammar-ending chunks.
-- `core/conjugation.js` infers coarse surface forms such as `te-form`, `ta-form`, `nai-form`, and polite endings.
-- `core/matcher.js` includes `conjugation` and nearby `tokens` on each match.
+- `core/conjugation.js` infers coarse surface forms such as `te-form`, `ta-form`, `nai-form`, and polite endings, and expands a matched phrase to its natural boundary.
+- `core/matcher.js` includes `conjugation` context on each match.
 
 This is deliberately lightweight. It improves UI context and false-positive control without turning the extension into a heavy parser.
 
@@ -248,7 +246,6 @@ node --check popup.js
 node --check sidepanel.js
 node --check options.js
 node --check onboarding.js
-node --check core/tokenizer.js
 node --check core/conjugation.js
 node --check core/srs.js
 node --check core/ai-provider.js
@@ -279,7 +276,7 @@ The ZIP is written to `dist/` and intentionally excludes tests, scripts, and dra
 
 - The local matcher is not a full Japanese parser.
 - Romaji is basic kana-only; kanji readings are not guessed without a dictionary.
-- The tokenizer/conjugation helpers are rule-based and intentionally lightweight.
+- The conjugation helpers are rule-based and intentionally lightweight.
 - Semantic Vietnamese/English mode is keyword-based.
 - Cloud AI requires a separate backend proxy; the extension intentionally does not include provider API keys.
 - SRS is intentionally lightweight and local-only, not a full FSRS implementation.

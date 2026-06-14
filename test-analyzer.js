@@ -18,7 +18,6 @@ const files = [
   "data/semantic-n1.js",
   "core/normalize.js",
   "core/romaji.js",
-  "core/tokenizer.js",
   "core/conjugation.js",
   "core/ai-provider.js",
   "core/matcher.js"

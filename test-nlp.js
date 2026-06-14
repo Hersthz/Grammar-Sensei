@@ -1,4 +1,4 @@
-/* Grammar Sensei tokenizer/conjugation tests */
+/* Grammar Sensei conjugation tests */
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
@@ -6,7 +6,6 @@ const assert = require("assert");
 
 const root = __dirname;
 const files = [
-  "core/tokenizer.js",
   "core/conjugation.js"
 ];
 
@@ -21,21 +20,7 @@ for (const file of files) {
   vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), context, { filename: file });
 }
 
-const Tokenizer = context.GrammarSenseiCore.Tokenizer;
 const Conjugation = context.GrammarSenseiCore.Conjugation;
-
-assert.strictEqual(Tokenizer.available, true);
-assert.strictEqual(Tokenizer.quality, "lightweight-rule-tokenizer");
-
-const tokens = Tokenizer.tokenize("彼は本を読んでいる。");
-assert(tokens.some((token) => token.surface === "は" && token.type === "particle"), "Tokenizer should identify は as a particle");
-assert(tokens.some((token) => token.surface === "を" && token.type === "particle"), "Tokenizer should identify を as a particle");
-assert(tokens.some((token) => token.surface === "。" && token.type === "punctuation"), "Tokenizer should preserve Japanese punctuation");
-
-const window = Tokenizer.getTokenWindow("彼は日本に行ったことがあります。", 5, 15);
-assert(Array.isArray(window.before));
-assert(Array.isArray(window.inside));
-assert(Array.isArray(window.after));
 
 assert.strictEqual(Conjugation.detectSurfaceForm("読んで"), "te-form");
 assert.strictEqual(Conjugation.detectSurfaceForm("行った"), "ta-form");

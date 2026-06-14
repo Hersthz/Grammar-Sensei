@@ -249,6 +249,28 @@ const grammarEntries = context.GrammarSenseiData.GRAMMAR_DATABASE;
   assert.strictEqual(novel.primary.confidence, 60);
   assert(novel.primary.id.startsWith("ai:"));
 
+  // --- shouldAutoFallback: the auto-fire decision gates ---
+  const sf = AIProvider.shouldAutoFallback;
+
+  // Browser auto-fires on a no-match user selection (the default happy path).
+  assert.strictEqual(sf({ aiMode: "browser", autoAiFallback: true, hasPrimary: false, source: "selection" }), true);
+  // Cloud auto-fires too once it's the active mode.
+  assert.strictEqual(sf({ aiMode: "cloud", autoAiFallback: true, hasPrimary: false, source: "selection" }), true);
+  // AI off → never fires, even when forced.
+  assert.strictEqual(sf({ aiMode: "off", autoAiFallback: true, hasPrimary: false, source: "selection" }), false);
+  assert.strictEqual(sf({ aiMode: "off", autoAiFallback: true, hasPrimary: false, source: "selection", force: true }), false);
+  // A confident local match suppresses the fallback (don't override local).
+  assert.strictEqual(sf({ aiMode: "browser", autoAiFallback: true, hasPrimary: true, source: "selection" }), false);
+  // autoAiFallback toggled off → no auto, but an explicit force still runs.
+  assert.strictEqual(sf({ aiMode: "browser", autoAiFallback: false, hasPrimary: false, source: "selection" }), false);
+  assert.strictEqual(sf({ aiMode: "browser", autoAiFallback: false, hasPrimary: false, source: "selection", force: true }), true);
+  // High-frequency sources are blocked from auto-fire (no model spam)...
+  for (const blocked of AIProvider.AI_FALLBACK_BLOCKED_SOURCES) {
+    assert.strictEqual(sf({ aiMode: "browser", autoAiFallback: true, hasPrimary: false, source: blocked }), false, `${blocked} should be blocked`);
+    // ...but a manual "Ask AI" force overrides the block.
+    assert.strictEqual(sf({ aiMode: "browser", autoAiFallback: true, hasPrimary: false, source: blocked, force: true }), true, `${blocked} force should fire`);
+  }
+
   console.log("AI provider tests passed.");
 })().catch((error) => {
   console.error(error);

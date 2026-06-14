@@ -621,6 +621,21 @@
     return new NoAIProvider();
   }
 
+  // High-frequency / background sources never auto-trigger AI so the model is
+  // not spammed (hover fires constantly, scan is per-batch).
+  const AI_FALLBACK_BLOCKED_SOURCES = ["hover", "auto-selection", "scan", "shift-scan", "scan-batch"];
+
+  // Pure decision: should the no-match AI fallback run? `force` is an explicit
+  // user "Ask AI" gesture that bypasses the auto toggle and the source block,
+  // but AI mode "off" or an existing confident local match always wins.
+  function shouldAutoFallback({ aiMode, autoAiFallback, hasPrimary, source, force = false }) {
+    if (aiMode === "off") return false;
+    if (hasPrimary) return false;
+    if (!force && !autoAiFallback) return false;
+    if (!force && AI_FALLBACK_BLOCKED_SOURCES.includes(source)) return false;
+    return true;
+  }
+
   Core.AIProvider = {
     AI_RESPONSE_SCHEMA,
     BROWSER_RESPONSE_SCHEMA,
@@ -636,6 +651,8 @@
     NoAIProvider,
     BrowserAIProvider,
     CloudAIProvider,
-    createAIProvider
+    createAIProvider,
+    AI_FALLBACK_BLOCKED_SOURCES,
+    shouldAutoFallback
   };
 })(globalThis);

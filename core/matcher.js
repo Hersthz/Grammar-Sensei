@@ -6,7 +6,6 @@
   const Data = global.GrammarSenseiData = global.GrammarSenseiData || {};
   const Normalize = Core.Normalize;
   const Romaji = Core.Romaji;
-  const Tokenizer = Core.Tokenizer;
   const Conjugation = Core.Conjugation;
 
   const ANALYSIS_CACHE_LIMIT = 200;
@@ -193,9 +192,6 @@
     const context = Conjugation?.inferMatchContext
       ? Conjugation.inferMatchContext(text, hit)
       : { matchedText: expandMatchedText(text, hit), form: "unknown", leftContext: "", phraseStart: hit.index };
-    const tokenWindow = Tokenizer?.getTokenWindow
-      ? Tokenizer.getTokenWindow(text, hit.index, hit.index + hit.length)
-      : { before: [], inside: [], after: [] };
     return {
       id: entry.id,
       grammar: entry.pattern,
@@ -206,11 +202,6 @@
         form: context.form,
         leftContext: context.leftContext || "",
         phraseStart: context.phraseStart ?? hit.index
-      },
-      tokens: {
-        before: tokenWindow.before,
-        inside: tokenWindow.inside,
-        after: tokenWindow.after
       },
       meaning_vi: entry.meaning_vi,
       meaning_en: entry.meaning_en,
